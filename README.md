@@ -2,6 +2,8 @@
 
 Institutional-quality deal analysis powered by Claude Code. Drop a pitch deck and get a screening memo with scored dimensions, adversarial review, and an executive brief — the kind of output a senior associate at a top-tier fund would produce.
 
+> **New here?** Follow the **[Step-by-Step Setup Guide](SETUP-GUIDE.md)** — it walks you through everything from scratch, no technical experience needed.
+
 ## Prerequisites
 
 - **Node.js 18+** and npm
