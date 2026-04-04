@@ -54,14 +54,11 @@ If you see "command not found":
 
 ## Step 4: Download the Project
 
-You should have received access to a private GitHub repository.
-
-1. Go to the repository link you were given (looks like `github.com/spenserwyatt/vc-diligence`)
-2. If prompted, sign in to GitHub (create a free account if you don't have one)
-3. Click the green **"Code"** button
-4. Click **"Download ZIP"**
-5. Open your Downloads folder and double-click the ZIP to unzip it
-6. You should now have a folder called `vc-diligence-main`
+1. Go to [github.com/spenserwyatt/vc-diligence](https://github.com/spenserwyatt/vc-diligence)
+2. Click the green **"Code"** button
+3. Click **"Download ZIP"**
+4. Open your Downloads folder and double-click the ZIP to unzip it
+5. You should now have a folder called `vc-diligence-main`
 
 ---
 
