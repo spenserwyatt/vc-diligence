@@ -160,7 +160,7 @@ export function extractClaimCounts(md: string): {
 
 export function extractWeakestLink(md: string): string | null {
   // Find the adversarial review appendix
-  const advMatch = md.match(/^#{1,2}\s+(?:APPENDIX|Appendix):\s+(?:ADVERSARIAL REVIEW|Adversarial Review)/m);
+  const advMatch = md.match(/^#{1,2}\s+(?:(?:APPENDIX|Appendix):\s+)?(?:ADVERSARIAL REVIEW|Adversarial Review)/m);
   if (!advMatch) return null;
   const adv = md.slice(advMatch.index! + advMatch[0].length);
   // Find the Weakest Link subsection
@@ -231,6 +231,7 @@ function extractTitle(md: string): string {
     !s ||
     s.length < 3 ||
     /^appendix/i.test(s) ||
+    /^adversarial/i.test(s) ||
     /^stage \d/i.test(s) ||
     /^what we know/i.test(s) ||
     /^screening/i.test(s);

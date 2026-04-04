@@ -109,10 +109,11 @@ function extractH1Title(md) {
       .replace(/DILIGENCE REPORT/i, "")
       .replace(/FUND EVALUATION/i, "")
       .replace(/APPENDIX[^]*/i, "")
+      .replace(/ADVERSARIAL REVIEW.*/i, "")
       .replace(/[—–-]+.*/, "")
       .replace(/\([^)]*\)$/, "")  // strip trailing parenthetical like ($250MM...)
       .trim();
-    if (cleaned && cleaned.length > 2 && !/^appendix/i.test(cleaned)) return cleaned;
+    if (cleaned && cleaned.length > 2 && !/^appendix/i.test(cleaned) && !/^adversarial/i.test(cleaned)) return cleaned;
   }
 
   // Fallback: first ## heading that isn't a numbered section
@@ -906,8 +907,12 @@ function extractMarketSizing(md) {
 // ---------------------------------------------------------------------------
 
 function extractAdversarialSection(md) {
-  // Match # or ## APPENDIX: ADVERSARIAL REVIEW (case-insensitive)
-  const match = md.match(/^#{1,2}\s+(?:APPENDIX|Appendix):\s+(?:ADVERSARIAL REVIEW|Adversarial Review)/m);
+  // Match multiple heading formats:
+  // # APPENDIX: ADVERSARIAL REVIEW
+  // ## Appendix: Adversarial Review
+  // # ADVERSARIAL REVIEW -- Appendix
+  // # ADVERSARIAL REVIEW
+  const match = md.match(/^#{1,2}\s+(?:(?:APPENDIX|Appendix):\s+)?(?:ADVERSARIAL REVIEW|Adversarial Review)/m);
   if (!match) return "";
   return md.slice(match.index + match[0].length).trim();
 }
