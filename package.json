@@ -1,0 +1,16 @@
+{
+  "name": "vc-diligence-2",
+  "version": "1.0.0",
+  "description": "```bash chmod +x setup.sh ./setup.sh ```",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "docx": "^9.6.1"
+  }
+}
