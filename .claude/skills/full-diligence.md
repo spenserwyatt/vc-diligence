@@ -60,9 +60,9 @@ Save output to `deals/[company-name]/01-extraction.md`
 
 ## Phases 2-4: Market, Team, Financial — RUN IN PARALLEL
 
-**CRITICAL: These three phases depend ONLY on Phase 1 output. Launch all three subagents simultaneously to save 15-20 minutes.**
+**CRITICAL: You MUST launch all three subagents in a SINGLE message with THREE parallel tool calls. Do NOT run them sequentially. This saves 15-20 minutes.**
 
-Launch these three subagents at the same time using parallel tool calls:
+Launch market-researcher, team-researcher, and financial-modeler as three Agent tool calls in ONE response:
 
 ### Phase 2: Market Interrogation
 **Delegate to: market-researcher subagent**
@@ -123,31 +123,19 @@ Save output to `deals/[company-name]/04-financials.md`
 
 **Wait for all three to complete before proceeding to Phase 5.**
 
-## Phase 5: Terms Analysis
-**Delegate to: terms-analyst subagent (if formal term sheet provided) OR skip if financial-modeler already covered terms**
+## Phases 5-6: Terms + Impact — RUN IN PARALLEL (if applicable)
 
-**If a formal term sheet is provided:** Delegate to terms-analyst for detailed provision-by-provision analysis:
-- Valuation relative to traction, stage, and sector comparables
-- Liquidation preference structure (1x non-participating = standard; anything else = flag it)
-- Anti-dilution provisions (weighted average vs full ratchet)
-- Pro-rata rights, information rights, board composition
-- Protective provisions and veto rights
-- Option pool and its impact on effective valuation
-- Pay-to-play, drag-along/tag-along provisions
-- Cap table impact — what happens to founder ownership?
-- Save output to `deals/[company-name]/05-terms.md`
+Launch whichever of these apply as parallel tool calls in a single message. If neither applies, skip to Phase 7.
 
-**If NO formal term sheet:** Skip this phase — the financial-modeler (Phase 4) now includes a Deal Terms Assessment section that evaluates whatever deal economics are available from the deck (raise amount, implied valuation, instrument type) and recommends terms. This ensures terms evaluation always happens, even without a term sheet.
+### Phase 5: Terms Analysis
+**Delegate to: terms-analyst subagent — ONLY if a formal term sheet is provided.**
 
-## Phase 6: Impact Analysis (ONLY if impact deal detected)
-**Delegate to: impact-analyst subagent**
+If no term sheet exists, skip — the financial-modeler (Phase 4) already covers basic deal economics.
 
-- Theory of change assessment — is the causal logic sound?
-- Additionality — would this happen anyway without this capital?
-- Measurement framework — IRIS+ aligned? Real KPIs or vanity metrics?
-- Concessionary analysis — below-market returns expected? If so, is the impact justification sufficient?
-- SDG alignment mapping
-- Comparison to alternatives — could the same capital achieve more impact elsewhere?
+Save output to `deals/[company-name]/05-terms.md`
+
+### Phase 6: Impact Analysis
+**Delegate to: impact-analyst subagent — ONLY if this is an impact deal** (climate, social enterprise, ESG-thesis, SDG-aligned).
 
 Save output to `deals/[company-name]/06-impact.md`
 
