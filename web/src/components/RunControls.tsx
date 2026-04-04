@@ -141,6 +141,12 @@ export function RunControls({
             />
           </div>
 
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
+            <strong>Before you start:</strong> Runs take 20-40 minutes and use
+            Claude credits (~$5-15 per run depending on deal complexity). The
+            pipeline cannot be stopped once started.
+          </div>
+
           <button
             onClick={triggerRun}
             disabled={starting}

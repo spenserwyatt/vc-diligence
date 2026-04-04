@@ -20,20 +20,12 @@ export default function RootLayout({
             <Link href="/" className="font-bold text-lg tracking-tight">
               VC Diligence
             </Link>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/compare"
-                className="text-sm px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors"
-              >
-                Compare
-              </Link>
-              <Link
-                href="/new"
-                className="text-sm px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors"
-              >
-                + New Deal
-              </Link>
-            </div>
+            <Link
+              href="/new"
+              className="text-sm px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors"
+            >
+              + New Deal
+            </Link>
           </div>
         </nav>
         <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 // VerdictBadge removed — score + analyst take is the new design
 import { BriefViewer } from "@/components/BriefViewer";
 import { FileList } from "@/components/FileList";
@@ -19,10 +20,13 @@ export default function DealDetailPage({
   params: Promise<{ name: string }>;
 }) {
   const { name } = use(params);
+  const router = useRouter();
   const [deal, setDeal] = useState<DealDetail | null>(null);
   const [completedFiles, setCompletedFiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("brief");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Full fetch — includes htmlBrief, files, etc.
   const fetchDeal = useCallback(async () => {
@@ -282,6 +286,44 @@ export default function DealDetailPage({
         <div className="space-y-8">
           <DealMetaEditor dealName={deal.name} initialMeta={deal.meta} />
           <NotesLog dealName={deal.name} />
+
+          {/* Delete deal */}
+          <div className="border-t border-border pt-6">
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-xs text-muted hover:text-vc-red transition-colors"
+              >
+                Delete this deal...
+              </button>
+            ) : (
+              <div className="p-4 bg-vc-red/5 border border-vc-red/20 rounded-lg">
+                <p className="text-sm font-medium text-vc-red mb-3">
+                  Permanently delete {deal.displayName}? This removes all files, notes, and analysis. Cannot be undone.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      setDeleting(true);
+                      const res = await fetch(`/api/deals/${deal.name}/delete`, { method: "POST" });
+                      if (res.ok) router.push("/");
+                      else setDeleting(false);
+                    }}
+                    disabled={deleting}
+                    className="px-4 py-1.5 bg-vc-red text-white rounded text-xs font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {deleting ? "Deleting..." : "Yes, delete permanently"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-4 py-1.5 text-xs text-muted hover:text-body"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
