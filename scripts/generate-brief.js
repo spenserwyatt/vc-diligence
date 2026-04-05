@@ -1309,7 +1309,7 @@ const totalScoreColor =
 // so empty sections don't create gaps
 function sectionHeader(placeholder, title, borderColor) {
   borderColor = borderColor || COLORS.navy;
-  return `<h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin: 36px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid ${borderColor};">SECTION_NUM. ${escapeHtml(title)}</h2>`;
+  return `<h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin: 36px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid ${borderColor};">${escapeHtml(title)}</h2>`;
 }
 
 function emptyWarning(sectionName) {
@@ -1818,13 +1818,7 @@ if (warnings.length > 0) {
   console.warn("Score validation warnings:", warnings.join("; "));
 }
 
-// Apply sequential section numbering (sections I and II are header/verdict, so body starts at III)
-const romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII"];
-let sectionCount = 2; // I = Header, II = Recommendation (already rendered)
-const numberedHtml = validatedHtml.replace(/SECTION_NUM/g, () => {
-  sectionCount++;
-  return romans[sectionCount - 1] || sectionCount.toString();
-});
+const numberedHtml = validatedHtml;
 
 const outputDir = path.dirname(outputPath);
 if (outputDir && !fs.existsSync(outputDir)) {
