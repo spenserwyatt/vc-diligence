@@ -35,7 +35,7 @@ The system operates in two stages:
 **Stage 2: Deep Diligence** (post-data room) — triggered via `deep-diligence` skill when data room materials are added to the deal folder. Builds on Stage 1 without redoing it. Output: files 08-09 + updated HTML brief.
 
 ### Direct Deal Pipeline — Stage 1 (7 Phases)
-1. Deck Analyst — extracts and interrogates every claim, assigns claim IDs (C1, C2...)
+1. Deck Analyst — extracts key facts, identifies gaps and red flags
 2. Market Interrogation — validates TAM/SAM, maps competition, answers "Why Now?" (market-researcher handles all three)
 3. Team Assessment — backgrounds, track record, gaps, red flags
 4. Financial Stress Test — bear/base/bull scenarios, unit economics (marked [ESTIMATED] without data room)
@@ -97,10 +97,6 @@ Run `./setup.sh` to install everything automatically. This installs:
 - HTML briefs: `output/[name]-brief.html` (regenerated at each stage)
 - Word docs: `output/[name]-diligence-memo.docx` (Stage 1), `output/[name]-diligence-report.docx` (Stage 2)
 
-### Claim ID Pipeline
-- Phase 1 (deck-analyst) assigns unique claim IDs (C1, C2, C3...) to every factual assertion
-- Phases 2-4 (market-researcher, team-researcher, financial-modeler) reference these IDs when verifying or contradicting claims
-- Phase 7 (synthesis-agent) compiles a Claim Verification Summary table showing final status of all claims
 
 
 <claude-mem-context>

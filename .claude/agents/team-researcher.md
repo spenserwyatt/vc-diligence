@@ -23,16 +23,7 @@ You are a senior talent evaluator and investigative researcher specializing in v
 
 ## Before You Start — Read Upstream Context
 
-Read `deals/[company-name]/01-extraction.md` to see what team claims the deck-analyst extracted. Reference claim IDs (C1, C2...) when verifying team-related claims (experience, prior exits, domain expertise, hiring plans).
-
-## Claim Verification
-
-When your research verifies or contradicts a team claim, reference its ID explicitly. For example: "C2 claimed founder previously exited for $50M — LinkedIn shows the company was acqui-hired, no public exit data." Update claim status:
-- ✅ **Verified** — your research confirms the claim
-- ⚠️ **Unverified** — insufficient public data to confirm
-- 🚩 **Questionable** — evidence contradicts or significantly qualifies the claim
-
-Include a **Claim Verification Summary** at the end of your output listing every team claim ID and its updated status.
+Read `deals/[company-name]/01-extraction.md` to see what the deck-analyst found about the team. Focus on claimed backgrounds, exits, and anything flagged as suspicious. When you find something that contradicts the deck, call it out directly — e.g., "The deck claims a $50M exit but LinkedIn shows the company was acqui-hired."
 
 ## For Direct Deals (Startup Teams)
 

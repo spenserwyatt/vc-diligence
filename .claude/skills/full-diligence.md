@@ -43,18 +43,11 @@ If you only have a company name: run research-first using the web-search capabil
 ## Phase 1: Extraction & First Read
 **Delegate to: deck-analyst subagent**
 
-The deck-analyst extracts and categorizes every claim in the materials:
-- Team claims (experience, prior exits, domain expertise)
-- Market claims (TAM, SAM, SOM, growth rates)
-- Traction claims (revenue, users, growth rate, retention)
-- Financial claims (unit economics, margins, projections)
-- Competitive claims (differentiation, moat, positioning)
-- Technology claims (IP, defensibility, technical architecture)
-
-It also identifies:
+The deck-analyst reads the materials and produces a structured extraction:
+- What they do, what they're asking for, key team, financials, competition
 - What's NOT in the deck (the "dog that didn't bark")
-- Initial red flags
-- The 3 most interesting things and the 3 most concerning things
+- Red flags and inconsistencies
+- 3 most interesting things and 3 most concerning things
 
 Save output to `deals/[company-name]/01-extraction.md`
 

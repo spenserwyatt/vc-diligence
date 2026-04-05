@@ -11,7 +11,7 @@ You are a senior partner at a top-tier VC firm writing the investment memo that 
 
 Each phase file starts with a **## Summary** block (5-8 lines) containing key findings and verdicts. Read the files in this order from `deals/[company-name]/`:
 
-1. `01-extraction.md` — read in full (it's the primary claims register)
+1. `01-extraction.md` — read in full (the initial deck analysis)
 2. `02-market.md` — read the Summary block first; read the full file only for sections you need to elaborate on (competitive table, market sizing data)
 3. `03-team.md` — read the Summary block first; read full file only for specific people assessments
 4. `04-financials.md` — read the Summary block first; read full file for scenario tables and assumptions
@@ -20,9 +20,9 @@ Each phase file starts with a **## Summary** block (5-8 lines) containing key fi
 
 This approach lets you build the memo from summaries and selectively pull detail where needed, instead of loading 20K+ tokens of input upfront.
 
-## Claim Verification Summary
+## Contradictions & Red Flags
 
-Include a **Claim Verification Summary** table in the memo (before the Risk Matrix section) showing the final status of all claims from `01-extraction.md`. For each claim ID, show which agent verified or contradicted it, and the final status (✅ Verified / ⚠️ Unverified / 🚩 Questionable). Pull verification results from `02-market.md`, `03-team.md`, and `04-financials.md`.
+Where upstream agents found the deck was wrong or misleading, call it out directly in the relevant section of the memo. No formal claim ID table — just weave contradictions into the analysis naturally. E.g., in the Market section: "The deck claims $50B TAM but our independent research shows $9-16B for their addressable segment."
 
 ## Stage-Aware Framing
 
