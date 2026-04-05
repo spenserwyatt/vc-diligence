@@ -488,16 +488,22 @@ function extractRisksWithMitigation(md) {
 }
 
 function extractGoDeeper(md) {
-  const recSection = extractSection(md, "\\d+\\.\\s*Recommendation");
-  if (!recSection) return { conditions: [], rationale: "" };
+  // Try multiple sections — for funds, conditions may be in a separate section
+  const sections = [
+    extractSection(md, "\\d+\\.\\s*Recommendation"),
+    extractSection(md, "Recommendation"),
+    extractSection(md, "Conditions for Upgrade"),
+  ].filter(Boolean).join("\n\n");
+  if (!sections) return { conditions: [], rationale: "" };
+  const recSection = sections;
 
   const result = { conditions: [], rationale: "" };
 
-  // Find the "what would change / revisit" block and extract full items with explanations
+  // Find the "what would change / revisit / upgrade" block and extract full items with explanations
   const changeMatch = recSection.match(
-    /\*\*(?:What would (?:change|make this worth)[^*]*|Conditions to (?:Revisit|Upgrade)[^*]*)\*\*[:\s]*([\s\S]*?)(?=\n\*\*[A-Z][^*]{0,30}\*\*(?!\.)|\n---|\n##|$)/i
+    /\*\*(?:What would (?:change|make this worth)[^*]*|Conditions to (?:Revisit|Upgrade)[^*]*|To reach (?:CONDITIONAL|COMMIT)[^*]*)\*\*[:\s]*([\s\S]*?)(?=\n\*\*To reach [A-Z]|\n\*\*[A-Z][^*]{0,30}\*\*(?!\.)|\n---|\n##|$)/i
   ) || recSection.match(
-    /###?\s*(?:Conditions to Revisit|What Would Change)[^\n]*\n+([\s\S]*?)(?=###|\n##|$)/i
+    /###?\s*(?:Conditions (?:to Revisit|for Upgrade)|What Would Change)[^\n]*\n+([\s\S]*?)(?=###|\n##|$)/i
   );
 
   if (changeMatch) {
@@ -511,7 +517,7 @@ function extractGoDeeper(md) {
       result.conditions.push({ condition, explanation });
     }
 
-    // Fallback: bullet items with bold
+    // Fallback: bullet items (with or without bold)
     if (result.conditions.length === 0) {
       const lines = content.split("\n");
       for (const line of lines) {
@@ -522,11 +528,13 @@ function extractGoDeeper(md) {
             explanation: bullet[2].trim(),
           });
         } else {
-          const simpleBullet = line.match(/^[-*]\s+(.+)/);
+          const simpleBullet = line.match(/^[-*]\s+(.{15,})/);
           if (simpleBullet) {
+            // Try to split on score hint like "(+0.5 to Process)"
+            const withScore = simpleBullet[1].match(/^(.+?)(\s*\(\+[\d.]+\s+to\s+\w+\))?$/);
             result.conditions.push({
-              condition: simpleBullet[1].replace(/\*\*/g, "").trim(),
-              explanation: "",
+              condition: (withScore ? withScore[1] : simpleBullet[1]).replace(/\*\*/g, "").trim(),
+              explanation: withScore && withScore[2] ? withScore[2].trim() : "",
             });
           }
         }
@@ -1132,9 +1140,16 @@ const bottomLine = extractBottomLine(markdown);
 const fullExecSummary = extractFullExecSummary(markdown);
 
 // Dimension prose sections — concise analysis per area
-const teamProse = extractSectionProse(markdown, "\\d+\\.\\s*Team Assessment", 2);
-const marketProse = extractSectionProse(markdown, "\\d+\\.\\s*Market Opportunity", 2);
-const financialProse = extractSectionProse(markdown, "\\d+\\.\\s*Financial Analysis", 2);
+let teamProse, marketProse, financialProse;
+if (isFundMemo) {
+  teamProse = extractSectionProse(markdown, "People Assessment", 2);
+  marketProse = extractSectionProse(markdown, "(?:Philosophy|Portfolio) Assessment", 2);
+  financialProse = extractSectionProse(markdown, "Performance Assessment", 2);
+} else {
+  teamProse = extractSectionProse(markdown, "\\d+\\.\\s*Team Assessment", 2);
+  marketProse = extractSectionProse(markdown, "\\d+\\.\\s*Market Opportunity", 2);
+  financialProse = extractSectionProse(markdown, "\\d+\\.\\s*Financial Analysis", 2);
+}
 
 // Leadership — for funds, extract GP info from People Assessment
 let leadership;
@@ -1195,30 +1210,17 @@ if (isFundMemo) {
   termsAnalysis = extractTermsAnalysis(markdown);
 }
 
-// Bull/Bear — for funds, use strengths from People/Philosophy and risks from Key Risks
+// Bull/Bear cases
 let bullCase, bearCase;
 if (isFundMemo) {
-  // Extract strengths from exec summary or individual P sections
+  // Fund exec summaries typically have the bull case in paragraph 1 and bear case in paragraph 2
+  // Use extractProse to get them as flowing analysis
   bullCase = [];
   bearCase = [];
-  // Try to find numbered strengths/concerns in any section
-  const execSection = extractSection(markdown, "\\d+\\.\\s*Executive Summary");
-  if (execSection) {
-    const bullets = execSection.match(/\*\*\d+\.\s+[^*]+\*\*/g) || [];
-    bullets.slice(0, 5).forEach(b => {
-      const text = b.replace(/\*\*/g, "").replace(/^\d+\.\s*/, "").trim();
-      if (text.length > 10) bullCase.push(text);
-    });
-  }
-  // Bear case from Key Risks
-  const riskSection = extractSection(markdown, "\\d+\\.\\s*Key Risks");
-  if (riskSection) {
-    const riskLines = riskSection.match(/\*\*([^*]{10,})\*\*/g) || [];
-    riskLines.slice(0, 5).forEach(r => {
-      const text = r.replace(/\*\*/g, "").trim();
-      if (text.length > 10 && !/^#|Rank|Risk/.test(text)) bearCase.push(text);
-    });
-  }
+  // Try "The Bull Case" section first (some fund memos have it)
+  bullCase = extractFullCaseSection(markdown, "\\d+\\.\\s*The Bull Case");
+  bearCase = extractFullCaseSection(markdown, "\\d+\\.\\s*Reasons NOT to Invest");
+  // If no dedicated sections, the exec summary IS the bull/bear — the brief already shows it in Analysis
 } else {
   bullCase = extractBullCase(markdown);
   bearCase = extractBearCase(markdown);
@@ -1797,7 +1799,7 @@ const html = `<!DOCTYPE html>
 
       ${teamProse.length > 0 ? `
       <div style="margin-top: 28px;">
-        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">Team</h2>
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">${isFundMemo ? "People" : "Team"}</h2>
         ${teamProse.map((p) =>
           `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
         ).join("\n")}
@@ -1805,7 +1807,7 @@ const html = `<!DOCTYPE html>
 
       ${marketProse.length > 0 ? `
       <div style="margin-top: 28px;">
-        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">Market</h2>
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">${isFundMemo ? "Strategy" : "Market"}</h2>
         ${marketProse.map((p) =>
           `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
         ).join("\n")}
@@ -1813,7 +1815,7 @@ const html = `<!DOCTYPE html>
 
       ${financialProse.length > 0 ? `
       <div style="margin-top: 28px;">
-        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">Financials</h2>
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">${isFundMemo ? "Performance" : "Financials"}</h2>
         ${financialProse.map((p) =>
           `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
         ).join("\n")}
