@@ -1896,8 +1896,13 @@ const html = `<!DOCTYPE html>
         ${confidence ? `<div style="font-size: 12px; opacity: 0.5; margin-top: 8px;">Confidence: ${escapeHtml(confidence)}</div>` : ""}
       </div>` : ""}
 
+      <!-- Disclaimer -->
+      <div style="margin-top: 36px; padding: 14px 16px; background: ${COLORS.lightGray}; border-radius: 6px; font-size: 11px; color: ${COLORS.muted}; line-height: 1.5;">
+        <strong>Disclaimer:</strong> This is an AI-assisted screening tool, not professional investment advice. All analysis is based on publicly available information and the materials provided. Financial calculations are reconstructed estimates, not audited figures. Market data, competitor information, and team backgrounds may contain errors. Scores and findings may vary between runs — treat them as directional assessments, not precise measurements. Verify all critical claims independently before making investment decisions.
+      </div>
+
       <!-- Footer -->
-      <div style="margin-top: 36px; padding-top: 16px; border-top: 1px solid ${COLORS.border}; font-size: 12px; color: ${COLORS.muted}; display: flex; justify-content: space-between;">
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid ${COLORS.border}; font-size: 11px; color: ${COLORS.muted}; display: flex; justify-content: space-between;">
         <span>Full memo: ${escapeHtml(path.basename(inputPath))}</span>
         <span>Generated: ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</span>
       </div>
