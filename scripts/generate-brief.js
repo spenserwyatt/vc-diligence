@@ -235,33 +235,45 @@ function extractSectionProse(md, sectionName, max) {
 }
 
 function extractBullCase(md) {
-  const section = extractSection(md, "\\d+\\.\\s*The Bull Case");
-  if (!section) return [];
-  return extractBoldItems(section);
+  return extractFullCaseSection(md, "\\d+\\.\\s*The Bull Case");
 }
 
 function extractBearCase(md) {
-  const section = extractSection(md, "\\d+\\.\\s*Reasons NOT to Invest");
-  if (!section) return [];
-  return extractBoldItems(section);
+  return extractFullCaseSection(md, "\\d+\\.\\s*Reasons NOT to Invest");
 }
 
-// Extracts bold items from a section — handles both numbered (**1. Text**) and paragraph (**Text.**) formats
+// Extracts full paragraphs with headline + explanation from bull/bear sections
+function extractFullCaseSection(md, sectionPattern) {
+  const section = extractSection(md, sectionPattern);
+  if (!section) return [];
+
+  const items = [];
+  const paragraphs = section.split(/\n\n+/).filter((p) => {
+    const t = p.trim();
+    return t && !t.startsWith("<!--") && !t.startsWith("---") && !t.startsWith("|") && t.length > 30;
+  });
+
+  for (const para of paragraphs) {
+    // Try to split into bold headline + explanation
+    const boldMatch = para.match(/^\*\*(.+?)\*\*\s*([\s\S]*)/);
+    if (boldMatch) {
+      const headline = boldMatch[1].replace(/^\d+\.\s*/, "").replace(/\.$/, "").trim();
+      const explanation = boldMatch[2].trim();
+      if (headline.length > 10 && !/^confidence/i.test(headline)) {
+        items.push({ headline, explanation });
+      }
+    }
+  }
+  return items.slice(0, 5);
+}
+
+// Legacy: just headlines (used by fund memo path)
 function extractBoldItems(section) {
   const items = [];
-  // Try numbered format first: **1. Text**
-  const numbered = /\*\*\d+\.\s*([^*]+?)\*\*/g;
-  let match;
-  while ((match = numbered.exec(section)) !== null) {
-    items.push(match[1].trim().replace(/\.$/, ""));
-  }
-  if (items.length > 0) return items.slice(0, 5);
-
-  // Fallback: paragraph bold format — **Bold sentence.** followed by explanation
   const para = /\*\*([^*]{10,}?)\*\*/g;
+  let match;
   while ((match = para.exec(section)) !== null) {
     let text = match[1].trim().replace(/\.$/, "");
-    // Skip confidence comments and short fragments
     if (/^confidence/i.test(text) || text.length < 15) continue;
     items.push(text);
   }
@@ -481,55 +493,44 @@ function extractGoDeeper(md) {
 
   const result = { conditions: [], rationale: "" };
 
-  // "Conditions to Revisit" subsection
-  const conditionsMatch = recSection.match(
-    /###?\s*Conditions to Revisit[\s\S]*?(?=###|\n\n\n|$)/i
+  // Find the "what would change / revisit" block and extract full items with explanations
+  const changeMatch = recSection.match(
+    /\*\*(?:What would (?:change|make this worth)[^*]*|Conditions to (?:Revisit|Upgrade)[^*]*)\*\*[:\s]*([\s\S]*?)(?=\n\*\*[A-Z][^*]{0,30}\*\*(?!\.)|\n---|\n##|$)/i
+  ) || recSection.match(
+    /###?\s*(?:Conditions to Revisit|What Would Change)[^\n]*\n+([\s\S]*?)(?=###|\n##|$)/i
   );
-  if (conditionsMatch) {
-    const lines = conditionsMatch[0].split("\n");
-    for (const line of lines) {
-      const bullet = line.match(/^[-*]\s+(.+)/);
-      if (bullet) {
-        result.conditions.push(bullet[1].replace(/\*\*/g, "").trim());
-      }
-    }
-  }
 
-  // "What would change / make this worth revisiting" subsection
-  if (result.conditions.length === 0) {
-    const changeMatch = recSection.match(
-      /\*\*What would (?:change|make this worth)[^*]*\*\*[:\s]*([\s\S]*?)(?=\n\*\*[A-Z]|\n---|\n##|$)/i
-    );
-    if (changeMatch) {
-      const lines = changeMatch[1].trim().split("\n");
+  if (changeMatch) {
+    const content = changeMatch[1].trim();
+    // Split on numbered items: "1. **Bold.** explanation"
+    const itemRegex = /\d+\.\s+\*\*(.+?)\*\*\s*([\s\S]*?)(?=\n\d+\.\s+\*\*|$)/g;
+    let match;
+    while ((match = itemRegex.exec(content)) !== null) {
+      const condition = match[1].replace(/\.$/, "").trim();
+      const explanation = match[2].trim();
+      result.conditions.push({ condition, explanation });
+    }
+
+    // Fallback: bullet items with bold
+    if (result.conditions.length === 0) {
+      const lines = content.split("\n");
       for (const line of lines) {
-        // Match bullets (- item) or numbered items (1. **Bold text**)
-        const bullet = line.match(/^[-*]\s+(.+)/);
-        const numbered = line.match(/^\d+\.\s+\*\*(.+?)\*\*/);
-        if (numbered) {
-          result.conditions.push(numbered[1].replace(/\.$/, "").trim());
-        } else if (bullet) {
-          result.conditions.push(bullet[1].replace(/\*\*/g, "").trim());
+        const bullet = line.match(/^[-*]\s+\*\*(.+?)\*\*\s*(.*)/);
+        if (bullet) {
+          result.conditions.push({
+            condition: bullet[1].replace(/\.$/, "").trim(),
+            explanation: bullet[2].trim(),
+          });
+        } else {
+          const simpleBullet = line.match(/^[-*]\s+(.+)/);
+          if (simpleBullet) {
+            result.conditions.push({
+              condition: simpleBullet[1].replace(/\*\*/g, "").trim(),
+              explanation: "",
+            });
+          }
         }
       }
-    }
-  }
-
-  // "Would Data Room Change This" subsection
-  const dataRoomMatch = recSection.match(
-    /###?\s*Would Data Room[^#]*?([\s\S]*?)(?=###|$)/i
-  );
-  if (dataRoomMatch) {
-    // Extract numbered items from this section
-    const drLines = dataRoomMatch[1].trim().split("\n");
-    for (const line of drLines) {
-      const numbered = line.match(/^\d+\.\s+\*\*(.+?)\*\*/);
-      if (numbered && result.conditions.length < 6) {
-        result.conditions.push(numbered[1].trim());
-      }
-    }
-    if (result.conditions.length === 0) {
-      result.rationale = dataRoomMatch[1].trim();
     }
   }
 
@@ -1610,27 +1611,23 @@ function buildWhatWouldChange() {
   const { conditions, rationale } = goDeeper;
   if (conditions.length === 0 && !rationale) return "";
 
-  const isPass = verdict === "PASS" || verdict === "CONDITIONAL PROCEED";
-  const borderColor = isPass ? COLORS.amber : COLORS.navy;
-  const sectionTitle = isPass ? "What Would Change Our View" : "Conditions to Confirm";
-
-  let html = sectionHeader("IX", sectionTitle, borderColor);
-
-  html += `<div style="padding: 16px 20px; background: ${COLORS.navy}08; border: 2px solid ${borderColor}40; border-radius: 8px;">`;
+  let html = sectionHeader("IX", "What Would Change Our View", COLORS.amber);
 
   if (conditions.length > 0) {
-    html += `<ul style="margin: 0; padding-left: 20px; color: ${COLORS.body}; line-height: 1.7;">
-      ${conditions.map((item) =>
-        `<li style="margin-bottom: 8px; font-size: 14px;">${mdBoldToHtml(item)}</li>`
-      ).join("\n")}
-    </ul>`;
+    html += conditions.map((item) => {
+      const cond = typeof item === "string" ? item : item.condition;
+      const expl = typeof item === "string" ? "" : item.explanation;
+      return `<div style="margin-bottom: 16px;">
+        <div style="font-size: 14px; font-weight: 600; color: ${COLORS.navy}; margin-bottom: 4px;">${escapeHtml(cond)}</div>
+        ${expl ? `<div style="font-size: 13px; color: ${COLORS.muted}; line-height: 1.6;">${mdBoldToHtml(expl)}</div>` : ""}
+      </div>`;
+    }).join("\n");
   }
 
   if (rationale) {
-    html += `<div style="font-size: 13px; color: ${COLORS.body}; line-height: 1.6; ${conditions.length > 0 ? "margin-top: 12px;" : ""}">${mdBoldToHtml(rationale)}</div>`;
+    html += `<div style="font-size: 13px; color: ${COLORS.body}; line-height: 1.6;">${mdBoldToHtml(rationale)}</div>`;
   }
 
-  html += `</div>`;
   return html;
 }
 
@@ -1774,6 +1771,28 @@ const html = `<!DOCTYPE html>
         ${fullExecSummary.map((p) =>
           `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
         ).join("\n")}
+      </div>` : ""}
+
+      ${bullCase.length > 0 ? `
+      <div style="margin-top: 28px;">
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.green};">Why This Is Interesting</h2>
+        ${bullCase.map((item) => {
+          if (typeof item === "string") return `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${escapeHtml(item)}</p>`;
+          return `<div style="margin-bottom: 16px;">
+            <p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7;"><strong>${escapeHtml(item.headline)}.</strong> ${mdBoldToHtml(item.explanation)}</p>
+          </div>`;
+        }).join("\n")}
+      </div>` : ""}
+
+      ${bearCase.length > 0 ? `
+      <div style="margin-top: 28px;">
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.red};">Why You Should Be Careful</h2>
+        ${bearCase.map((item) => {
+          if (typeof item === "string") return `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${escapeHtml(item)}</p>`;
+          return `<div style="margin-bottom: 16px;">
+            <p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7;"><strong>${escapeHtml(item.headline)}.</strong> ${mdBoldToHtml(item.explanation)}</p>
+          </div>`;
+        }).join("\n")}
       </div>` : ""}
 
       ${teamProse.length > 0 ? `
