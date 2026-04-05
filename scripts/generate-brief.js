@@ -205,25 +205,33 @@ function extractBottomLine(md) {
 function extractBullCase(md) {
   const section = extractSection(md, "\\d+\\.\\s*The Bull Case");
   if (!section) return [];
-
-  const items = [];
-  const regex = /\*\*\d+\.\s*([^*]+?)\*\*/g;
-  let match;
-  while ((match = regex.exec(section)) !== null) {
-    items.push(match[1].trim().replace(/\.$/, ""));
-  }
-  return items.slice(0, 5);
+  return extractBoldItems(section);
 }
 
 function extractBearCase(md) {
   const section = extractSection(md, "\\d+\\.\\s*Reasons NOT to Invest");
   if (!section) return [];
+  return extractBoldItems(section);
+}
 
+// Extracts bold items from a section — handles both numbered (**1. Text**) and paragraph (**Text.**) formats
+function extractBoldItems(section) {
   const items = [];
-  const regex = /\*\*\d+\.\s*([^*]+?)\*\*/g;
+  // Try numbered format first: **1. Text**
+  const numbered = /\*\*\d+\.\s*([^*]+?)\*\*/g;
   let match;
-  while ((match = regex.exec(section)) !== null) {
+  while ((match = numbered.exec(section)) !== null) {
     items.push(match[1].trim().replace(/\.$/, ""));
+  }
+  if (items.length > 0) return items.slice(0, 5);
+
+  // Fallback: paragraph bold format — **Bold sentence.** followed by explanation
+  const para = /\*\*([^*]{10,}?)\*\*/g;
+  while ((match = para.exec(section)) !== null) {
+    let text = match[1].trim().replace(/\.$/, "");
+    // Skip confidence comments and short fragments
+    if (/^confidence/i.test(text) || text.length < 15) continue;
+    items.push(text);
   }
   return items.slice(0, 5);
 }
