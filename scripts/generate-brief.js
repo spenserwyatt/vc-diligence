@@ -501,9 +501,11 @@ function extractGoDeeper(md) {
 
   // Find the "what would change / revisit / upgrade" block and extract full items with explanations
   const changeMatch = recSection.match(
-    /\*\*(?:What would (?:change|make this worth)[^*]*|Conditions to (?:Revisit|Upgrade)[^*]*|To reach (?:CONDITIONAL|COMMIT)[^*]*)\*\*[:\s]*([\s\S]*?)(?=\n\*\*To reach [A-Z]|\n\*\*[A-Z][^*]{0,30}\*\*(?!\.)|\n---|\n##|$)/i
+    /###?\s*(?:Conditions (?:to Revisit|for Upgrade|Required to Upgrade)[^\n]*)\n+([\s\S]*?)(?=\n###|\n##|$)/i
   ) || recSection.match(
-    /###?\s*(?:Conditions (?:to Revisit|for Upgrade)|What Would Change)[^\n]*\n+([\s\S]*?)(?=###|\n##|$)/i
+    /\*\*(?:What would (?:change|make this worth)[^*]*|Conditions to (?:Revisit|Upgrade)[^*]*)\*\*[:\s]*([\s\S]*?)(?=\n\*\*[A-Z][^*]{0,30}\*\*(?!\.)|\n---|\n##|$)/i
+  ) || recSection.match(
+    /###?\s*(?:What Would Change)[^\n]*\n+([\s\S]*?)(?=\n###|\n##|$)/i
   );
 
   if (changeMatch) {
