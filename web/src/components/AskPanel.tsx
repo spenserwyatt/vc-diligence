@@ -210,7 +210,7 @@ export function AskPanel({ dealName }: { dealName: string }) {
         {loading && (
           <div className="flex justify-start">
             <div className="bg-gray-100 rounded-lg px-4 py-3 text-sm text-muted animate-pulse">
-              Analyzing...
+              Thinking — this usually takes 15-20 seconds...
             </div>
           </div>
         )}
