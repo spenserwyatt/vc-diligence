@@ -495,16 +495,20 @@ function extractGoDeeper(md) {
     }
   }
 
-  // "What would change" subsection
+  // "What would change / make this worth revisiting" subsection
   if (result.conditions.length === 0) {
     const changeMatch = recSection.match(
-      /\*\*What would change[^*]*\*\*[:\s]*([\s\S]*?)(?=\n\n|$)/i
+      /\*\*What would (?:change|make this worth)[^*]*\*\*[:\s]*([\s\S]*?)(?=\n\*\*[A-Z]|\n---|\n##|$)/i
     );
     if (changeMatch) {
       const lines = changeMatch[1].trim().split("\n");
       for (const line of lines) {
+        // Match bullets (- item) or numbered items (1. **Bold text**)
         const bullet = line.match(/^[-*]\s+(.+)/);
-        if (bullet) {
+        const numbered = line.match(/^\d+\.\s+\*\*(.+?)\*\*/);
+        if (numbered) {
+          result.conditions.push(numbered[1].replace(/\.$/, "").trim());
+        } else if (bullet) {
           result.conditions.push(bullet[1].replace(/\*\*/g, "").trim());
         }
       }
