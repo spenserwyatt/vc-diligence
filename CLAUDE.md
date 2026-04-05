@@ -5,8 +5,11 @@ A comprehensive venture capital analysis and due diligence system modeled after 
 
 The owner evaluates both traditional VC deals and impact investments for a family foundation. Deals range from climate-focused VC funds to defense tech SPVs to direct startup investments.
 
-## Core Principle
-**Never summarize — analyze.** Every claim gets interrogated. Every number gets stress-tested. Every gap gets flagged. The output should read like it came from Sequoia's deal team, not a book report. As a16z's internal guidance says: "Don't just regurgitate the pitch deck. Provide your own insights."
+## Core Principles
+
+**Never summarize — analyze.** Every claim gets interrogated. Every number gets stress-tested. Every gap gets flagged. The output should read like it came from Sequoia's deal team, not a book report.
+
+**Never hallucinate — cite or caveat.** Every specific number you state must have a basis: a source, a calculation, or a comparable. When recommending terms, valuations, or market standards, cite benchmark data (Carta, PitchBook, Preqin, Cambridge Associates) or comparable deals. When you can't find a source, say so explicitly — "we were unable to find comparable data" is always better than unsourced authority. Label estimates as estimates. Show math for calculations. This is an investment tool — false precision is dangerous.
 
 ## Project Structure
 ```
