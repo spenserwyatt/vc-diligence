@@ -205,10 +205,33 @@ function extractBottomLine(md) {
 function extractFullExecSummary(md) {
   const execSection = extractSection(md, "\\d+\\.\\s*Executive Summary");
   if (!execSection) return [];
-  return execSection
+  return extractProse(execSection);
+}
+
+// Pulls flowing prose paragraphs from a section — skips tables, comments, lists, headers
+function extractProse(section, maxParagraphs) {
+  maxParagraphs = maxParagraphs || 10;
+  return section
     .split(/\n\n+/)
-    .filter((p) => p.trim() && !p.trim().startsWith("|") && !p.trim().startsWith("---") && !p.trim().startsWith("<!--"))
-    .map((p) => p.trim());
+    .filter((p) => {
+      const t = p.trim();
+      return t &&
+        !t.startsWith("|") &&
+        !t.startsWith("---") &&
+        !t.startsWith("<!--") &&
+        !t.startsWith("###") &&
+        !t.startsWith("- **") &&
+        !t.startsWith("* **") &&
+        t.length > 40;
+    })
+    .map((p) => p.trim())
+    .slice(0, maxParagraphs);
+}
+
+function extractSectionProse(md, sectionName, max) {
+  const section = extractSection(md, sectionName);
+  if (!section) return [];
+  return extractProse(section, max || 2);
 }
 
 function extractBullCase(md) {
@@ -1103,6 +1126,11 @@ const companyDescription = extractCompanyDescription(markdown);
 const bottomLine = extractBottomLine(markdown);
 const fullExecSummary = extractFullExecSummary(markdown);
 
+// Dimension prose sections — concise analysis per area
+const teamProse = extractSectionProse(markdown, "\\d+\\.\\s*Team Assessment", 2);
+const marketProse = extractSectionProse(markdown, "\\d+\\.\\s*Market Opportunity", 2);
+const financialProse = extractSectionProse(markdown, "\\d+\\.\\s*Financial Analysis", 2);
+
 // Leadership — for funds, extract GP info from People Assessment
 let leadership;
 if (isFundMemo) {
@@ -1733,26 +1761,6 @@ const html = `<!DOCTYPE html>
       </div>
     </div>` : ""}
 
-    <!-- Analyst's Take -->
-    ${(weakestLink || preMortem || killerQuestion) ? `
-    <div style="padding: 24px 32px; background: ${COLORS.navy}; color: ${COLORS.white};">
-      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.6; margin-bottom: 16px;">Analyst's Take</div>
-      ${thesisSurvival ? `<div style="font-size: 14px; line-height: 1.6; margin-bottom: 16px; opacity: 0.95;"><strong>Does the thesis survive?</strong> ${escapeHtml(thesisSurvival)}</div>` : ""}
-      ${weakestLink ? `<div style="margin-bottom: 14px;">
-        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 4px;">Weakest Link</div>
-        <div style="font-size: 13px; line-height: 1.55; opacity: 0.9;">${escapeHtml(weakestLink)}</div>
-      </div>` : ""}
-      ${preMortem ? `<div style="margin-bottom: 14px;">
-        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 4px;">Most Probable Failure</div>
-        <div style="font-size: 13px; line-height: 1.55; opacity: 0.9;">${escapeHtml(preMortem)}</div>
-      </div>` : ""}
-      ${killerQuestion ? `<div style="margin-bottom: 14px;">
-        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 4px;">Killer Question</div>
-        <div style="font-size: 13px; line-height: 1.55; opacity: 0.9; font-style: italic;">\u201c${escapeHtml(killerQuestion)}\u201d</div>
-      </div>` : ""}
-      ${confidence ? `<div style="font-size: 12px; opacity: 0.5; margin-top: 8px;">Confidence: ${escapeHtml(confidence)}</div>` : ""}
-    </div>` : ""}
-
     <!-- Analysis -->
     <div style="padding: 0 32px 28px 32px;">
 
@@ -1764,9 +1772,53 @@ const html = `<!DOCTYPE html>
         ).join("\n")}
       </div>` : ""}
 
+      ${teamProse.length > 0 ? `
+      <div style="margin-top: 28px;">
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">Team</h2>
+        ${teamProse.map((p) =>
+          `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
+        ).join("\n")}
+      </div>` : ""}
+
+      ${marketProse.length > 0 ? `
+      <div style="margin-top: 28px;">
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">Market</h2>
+        ${marketProse.map((p) =>
+          `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
+        ).join("\n")}
+      </div>` : ""}
+
+      ${financialProse.length > 0 ? `
+      <div style="margin-top: 28px;">
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">Financials</h2>
+        ${financialProse.map((p) =>
+          `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
+        ).join("\n")}
+      </div>` : ""}
+
       ${buildManagementQuestions()}
 
       ${buildWhatWouldChange()}
+
+      <!-- Analyst's Take -->
+      ${(weakestLink || preMortem || killerQuestion) ? `
+      <div style="margin-top: 28px; padding: 24px; background: ${COLORS.navy}; color: ${COLORS.white}; border-radius: 8px;">
+        <div style="font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.6; margin-bottom: 16px;">Analyst's Take</div>
+        ${thesisSurvival ? `<div style="font-size: 14px; line-height: 1.6; margin-bottom: 16px; opacity: 0.95;"><strong>Does the thesis survive?</strong> ${escapeHtml(thesisSurvival)}</div>` : ""}
+        ${weakestLink ? `<div style="margin-bottom: 14px;">
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 4px;">Weakest Link</div>
+          <div style="font-size: 13px; line-height: 1.55; opacity: 0.9;">${escapeHtml(weakestLink)}</div>
+        </div>` : ""}
+        ${preMortem ? `<div style="margin-bottom: 14px;">
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 4px;">Most Probable Failure</div>
+          <div style="font-size: 13px; line-height: 1.55; opacity: 0.9;">${escapeHtml(preMortem)}</div>
+        </div>` : ""}
+        ${killerQuestion ? `<div style="margin-bottom: 14px;">
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 4px;">Killer Question</div>
+          <div style="font-size: 13px; line-height: 1.55; opacity: 0.9; font-style: italic;">\u201c${escapeHtml(killerQuestion)}\u201d</div>
+        </div>` : ""}
+        ${confidence ? `<div style="font-size: 12px; opacity: 0.5; margin-top: 8px;">Confidence: ${escapeHtml(confidence)}</div>` : ""}
+      </div>` : ""}
 
       <!-- Footer -->
       <div style="margin-top: 36px; padding-top: 16px; border-top: 1px solid ${COLORS.border}; font-size: 12px; color: ${COLORS.muted}; display: flex; justify-content: space-between;">
