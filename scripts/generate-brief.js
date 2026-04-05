@@ -202,6 +202,15 @@ function extractBottomLine(md) {
   return paragraphs[0] ? paragraphs[0].trim() : "";
 }
 
+function extractFullExecSummary(md) {
+  const execSection = extractSection(md, "\\d+\\.\\s*Executive Summary");
+  if (!execSection) return [];
+  return execSection
+    .split(/\n\n+/)
+    .filter((p) => p.trim() && !p.trim().startsWith("|") && !p.trim().startsWith("---") && !p.trim().startsWith("<!--"))
+    .map((p) => p.trim());
+}
+
 function extractBullCase(md) {
   const section = extractSection(md, "\\d+\\.\\s*The Bull Case");
   if (!section) return [];
@@ -1092,6 +1101,7 @@ const verdictColor = rawVerdictColor;
 
 const companyDescription = extractCompanyDescription(markdown);
 const bottomLine = extractBottomLine(markdown);
+const fullExecSummary = extractFullExecSummary(markdown);
 
 // Leadership — for funds, extract GP info from People Assessment
 let leadership;
@@ -1743,41 +1753,20 @@ const html = `<!DOCTYPE html>
       ${confidence ? `<div style="font-size: 12px; opacity: 0.5; margin-top: 8px;">Confidence: ${escapeHtml(confidence)}</div>` : ""}
     </div>` : ""}
 
-    ${bottomLine ? `
-    <!-- Executive Summary -->
-    <div class="exec-summary" style="padding: 18px 32px; background: ${COLORS.lightGray}; border-bottom: 1px solid ${COLORS.border};">
-      <div style="font-size: 14px; color: ${COLORS.body}; line-height: 1.65; padding: 16px 20px; background: ${COLORS.white}; border-radius: 6px; border-left: 4px solid ${COLORS.navy};">${mdBoldToHtml(bottomLine)}</div>
-    </div>` : ""}
-
-    <!-- Body -->
+    <!-- Analysis -->
     <div style="padding: 0 32px 28px 32px;">
 
-      <!-- III. Company Overview -->
-      ${buildCompanyOverview()}
+      ${fullExecSummary.length > 0 ? `
+      <div style="margin-top: 28px;">
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">Analysis</h2>
+        ${fullExecSummary.map((p) =>
+          `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
+        ).join("\n")}
+      </div>` : ""}
 
-      <!-- IV. Deal Terms -->
-      ${buildDealTerms()}
-
-      <!-- V. Market & Competition -->
-      ${buildMarketCompetition()}
-
-      <!-- VI. Bull / Bear -->
-      ${buildBullBear()}
-
-      <!-- VII. Key Risks -->
-      ${buildRisks()}
-
-      <!-- VIII. Scenario Analysis -->
-      ${buildScenarioAnalysis()}
-
-      <!-- IX. What Would Change Our View -->
-      ${buildWhatWouldChange()}
-
-      <!-- X. Key Questions for Management -->
       ${buildManagementQuestions()}
 
-      <!-- XI. Score Summary -->
-      ${buildScoreSummary()}
+      ${buildWhatWouldChange()}
 
       <!-- Footer -->
       <div style="margin-top: 36px; padding-top: 16px; border-top: 1px solid ${COLORS.border}; font-size: 12px; color: ${COLORS.muted}; display: flex; justify-content: space-between;">
