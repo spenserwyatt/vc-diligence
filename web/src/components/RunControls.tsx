@@ -168,6 +168,11 @@ export function RunControls({
             stage={status.stage}
             state={status.state}
           />
+          {isRunning && (
+            <p className="text-xs text-muted mt-4 animate-pulse">
+              This typically takes 30-40 minutes. You can close this page and come back — the pipeline runs in the background.
+            </p>
+          )}
         </div>
       )}
 
