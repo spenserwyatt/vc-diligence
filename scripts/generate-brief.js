@@ -1144,9 +1144,16 @@ const fullExecSummary = extractFullExecSummary(markdown);
 // Dimension prose sections — concise analysis per area
 let teamProse, marketProse, financialProse;
 if (isFundMemo) {
-  teamProse = extractSectionProse(markdown, "People Assessment", 2);
-  marketProse = extractSectionProse(markdown, "(?:Philosophy|Portfolio) Assessment", 2);
-  financialProse = extractSectionProse(markdown, "Performance Assessment", 2);
+  const tryExtract = (...patterns) => {
+    for (const p of patterns) {
+      const result = extractSectionProse(markdown, p, 2);
+      if (result.length > 0) return result;
+    }
+    return [];
+  };
+  teamProse = tryExtract("\\d+\\.\\s*People Assessment", "People Assessment");
+  marketProse = tryExtract("\\d+\\.\\s*Philosophy Assessment", "\\d+\\.\\s*Portfolio Assessment", "Philosophy Assessment", "Portfolio Assessment");
+  financialProse = tryExtract("\\d+\\.\\s*Performance", "Performance Assessment", "Performance.*Fee");
 } else {
   teamProse = extractSectionProse(markdown, "\\d+\\.\\s*Team Assessment", 2);
   marketProse = extractSectionProse(markdown, "\\d+\\.\\s*Market Opportunity", 2);
@@ -1215,14 +1222,56 @@ if (isFundMemo) {
 // Bull/Bear cases
 let bullCase, bearCase;
 if (isFundMemo) {
-  // Fund exec summaries typically have the bull case in paragraph 1 and bear case in paragraph 2
-  // Use extractProse to get them as flowing analysis
-  bullCase = [];
-  bearCase = [];
-  // Try "The Bull Case" section first (some fund memos have it)
+  // Fund memos use different section names for bull/bear equivalent
   bullCase = extractFullCaseSection(markdown, "\\d+\\.\\s*The Bull Case");
+  if (bullCase.length === 0) bullCase = extractFullCaseSection(markdown, "What Makes This Investable");
+  if (bullCase.length === 0) {
+    // Try as flowing prose (no bold headlines)
+    const investable = extractSectionProse(markdown, "What Makes This Investable", 2);
+    if (investable.length > 0) {
+      bullCase = investable.map(p => ({ headline: "", explanation: p }));
+    }
+  }
+  if (bullCase.length === 0) {
+    // Pull positive paragraphs from exec summary (typically paragraph 1)
+    const execProse = extractSectionProse(markdown, "Executive Summary", 1);
+    if (execProse.length > 0) {
+      bullCase = [{ headline: "", explanation: execProse[0] }];
+    }
+  }
+
   bearCase = extractFullCaseSection(markdown, "\\d+\\.\\s*Reasons NOT to Invest");
-  // If no dedicated sections, the exec summary IS the bull/bear — the brief already shows it in Analysis
+  if (bearCase.length === 0) {
+    // Pull from Key Risks section — try bold items first, then table rows
+    bearCase = extractFullCaseSection(markdown, "Key Risks");
+  }
+  if (bearCase.length === 0) {
+    // Try Key Risks as a table: | # | **Risk Name** | Severity | Prob | Assessment |
+    const riskSection = extractSection(markdown, "\\d+\\.\\s*Key Risks") || extractSection(markdown, "Key Risks");
+    if (riskSection) {
+      const rows = riskSection.split("\n").filter(line => line.trim().startsWith("|") && /\*\*/.test(line));
+      for (const row of rows.slice(0, 5)) {
+        const cells = row.split("|").map(c => c.trim()).filter(Boolean);
+        if (cells.length >= 4) {
+          const riskMatch = cells.find(c => /\*\*/.test(c));
+          const assessment = cells[cells.length - 1];
+          if (riskMatch) {
+            bearCase.push({
+              headline: riskMatch.replace(/\*\*/g, "").trim(),
+              explanation: assessment.replace(/\*\*/g, "").trim(),
+            });
+          }
+        }
+      }
+    }
+  }
+  if (bearCase.length === 0) {
+    // Pull concern paragraph from exec summary (typically paragraph 2)
+    const execProse = extractSectionProse(markdown, "Executive Summary", 3);
+    if (execProse.length >= 2) {
+      bearCase = [{ headline: "", explanation: execProse[1] }];
+    }
+  }
 } else {
   bullCase = extractBullCase(markdown);
   bearCase = extractBearCase(markdown);
@@ -1783,7 +1832,7 @@ const html = `<!DOCTYPE html>
         ${bullCase.map((item) => {
           if (typeof item === "string") return `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${escapeHtml(item)}</p>`;
           return `<div style="margin-bottom: 16px;">
-            <p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7;"><strong>${escapeHtml(item.headline)}.</strong> ${mdBoldToHtml(item.explanation)}</p>
+            <p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7;">${item.headline ? `<strong>${escapeHtml(item.headline)}.</strong> ` : ""}${mdBoldToHtml(item.explanation)}</p>
           </div>`;
         }).join("\n")}
       </div>` : ""}
@@ -1794,7 +1843,7 @@ const html = `<!DOCTYPE html>
         ${bearCase.map((item) => {
           if (typeof item === "string") return `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${escapeHtml(item)}</p>`;
           return `<div style="margin-bottom: 16px;">
-            <p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7;"><strong>${escapeHtml(item.headline)}.</strong> ${mdBoldToHtml(item.explanation)}</p>
+            <p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7;">${item.headline ? `<strong>${escapeHtml(item.headline)}.</strong> ` : ""}${mdBoldToHtml(item.explanation)}</p>
           </div>`;
         }).join("\n")}
       </div>` : ""}
