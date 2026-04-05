@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 /**
- * run-pipeline.js — Orchestrates the diligence pipeline with true parallel execution.
- * Instead of one Claude process running everything sequentially, this script
- * spawns separate Claude processes per phase and runs phases 2-4 in parallel.
+ * run-pipeline.js — Runs the diligence pipeline as a standalone process.
+ * Spawned by the web server but fully detached from it.
  *
  * Usage: node web/scripts/run-pipeline.js <dealName> <pipelineType>
  */
 
-const { spawn, execSync, execFileSync } = require("child_process");
+const { spawn, execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -25,12 +24,63 @@ if (!dealName) {
 const dealDir = path.join(DEALS_DIR, dealName);
 const statusPath = path.join(dealDir, "status.json");
 
-const supplementaryContext = process.env.PIPELINE_CONTEXT || "";
-const contextBlock = supplementaryContext
-  ? `\n\nAdditional context from the investor (incorporate this into your analysis):\n${supplementaryContext}`
-  : "";
+// --- Kill zombie Claude processes before starting ---
+try {
+  const homeDir = require("os").homedir();
+  const psOutput = execSync(
+    `ps aux | grep "${homeDir}/.local/bin/claude" | grep -v grep | grep "stream-json" | awk '{print $2}'`,
+    { encoding: "utf-8" }
+  ).trim();
+  if (psOutput) {
+    const pids = psOutput.split("\n").filter(Boolean);
+    if (pids.length > 0) {
+      console.log(`Cleaning up ${pids.length} zombie Claude processes...`);
+      execSync(`kill -9 ${pids.join(" ")}`, { stdio: "ignore" });
+    }
+  }
+} catch {}
 
-// --- Helpers ---
+// --- Pre-extract PDF text ---
+// Saves Claude from spending minutes parsing binary PDFs.
+// Extracts text from all PDFs in the deal folder into .txt files.
+const pdfs = fs.readdirSync(dealDir).filter((f) => f.toLowerCase().endsWith(".pdf"));
+if (pdfs.length > 0) {
+  console.log(`Pre-extracting text from ${pdfs.length} PDF(s)...`);
+  for (const pdf of pdfs) {
+    const txtName = pdf.replace(/\.pdf$/i, ".extracted.txt");
+    const txtPath = path.join(dealDir, txtName);
+    if (fs.existsSync(txtPath)) {
+      console.log(`  ${txtName} already exists, skipping.`);
+      continue;
+    }
+    try {
+      const { execFileSync } = require("child_process");
+      const pdfPath = path.join(dealDir, pdf);
+      execFileSync("python3", [
+        path.join(__dirname, "extract-pdf.py"),
+        pdfPath,
+        txtPath,
+      ], { stdio: "inherit", timeout: 30000 });
+      console.log(`  Extracted: ${txtName}`);
+    } catch (err) {
+      console.error(`  Failed to extract ${pdf}: ${err.message}`);
+    }
+  }
+}
+
+// --- Phase file tracking ---
+const DEAL_PHASE_FILES = [
+  "01-extraction.md", "02-market.md", "03-team.md", "04-financials.md",
+  "05-terms.md", "06-impact.md", "07-memo.md",
+  "08-data-room-analysis.md", "09-full-report.md",
+];
+
+const FUND_PHASE_FILES = [
+  "deck-extracted.md", "P1-people.md", "P2-philosophy.md",
+  "P3-process.md", "P4-portfolio.md", "P5-performance.md", "fund-memo.md",
+];
+
+const PHASE_FILES = pipelineType === "fund" ? FUND_PHASE_FILES : DEAL_PHASE_FILES;
 
 function writeStatus(updates) {
   try {
@@ -44,224 +94,158 @@ function writeStatus(updates) {
   }
 }
 
-function runClaude(prompt) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      "claude",
-      ["--print", "--dangerously-skip-permissions", prompt],
-      {
-        cwd: PROJECT_ROOT,
-        stdio: ["ignore", "pipe", "pipe"],
-        env: { ...process.env },
-      }
-    );
-
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (d) => { stdout += d.toString(); });
-    child.stderr.on("data", (d) => { stderr += d.toString(); });
-
-    child.on("close", (code) => {
-      if (code === 0) resolve(stdout);
-      else reject(new Error(`Claude exited with code ${code}: ${stderr.slice(0, 500)}`));
-    });
-    child.on("error", reject);
-  });
-}
-
-function preExtractPDFs() {
-  const pdfs = fs.readdirSync(dealDir).filter((f) => f.toLowerCase().endsWith(".pdf"));
-  for (const pdf of pdfs) {
-    const txtName = pdf.replace(/\.pdf$/i, ".extracted.txt");
-    const txtPath = path.join(dealDir, txtName);
-    if (fs.existsSync(txtPath)) continue;
-    try {
-      execFileSync("python3", [
-        path.join(__dirname, "extract-pdf.py"),
-        path.join(dealDir, pdf),
-        txtPath,
-      ], { stdio: "inherit", timeout: 30000 });
-      console.log(`  Extracted: ${txtName}`);
-    } catch (err) {
-      console.error(`  Failed to extract ${pdf}: ${err.message}`);
+function detectPhaseFromFiles() {
+  try {
+    const files = fs.readdirSync(dealDir);
+    let latest = null;
+    for (const pf of PHASE_FILES) {
+      if (files.includes(pf)) latest = pf;
     }
-  }
-}
-
-function getExtractHint() {
-  const extracted = fs.readdirSync(dealDir).filter((f) => f.endsWith(".extracted.txt"));
-  return extracted.length > 0
-    ? ` Pre-extracted text files are available (${extracted.join(", ")}) — read these instead of PDFs.`
-    : "";
-}
-
-function phaseExists(filename) {
-  return fs.existsSync(path.join(dealDir, filename));
-}
-
-// --- Pipeline phases ---
-
-async function phase1() {
-  console.log("Phase 1: Claim Extraction...");
-  writeStatus({ currentPhase: "Phase 1: Claim Extraction" });
-
-  const hint = getExtractHint();
-  await runClaude(
-    `You are analyzing a deal in deals/${dealName}/.${hint}
-
-Read the deck materials and use the deck-analyst agent to extract and categorize every claim. Identify what's missing, initial red flags, and the 3 most interesting and 3 most concerning things.
-
-Save your complete output to deals/${dealName}/01-extraction.md${contextBlock}`
-  );
-
-  if (!phaseExists("01-extraction.md")) {
-    throw new Error("Phase 1 failed — 01-extraction.md not created");
-  }
-  console.log("  Phase 1 complete.");
-}
-
-async function phase2_market() {
-  console.log("  Phase 2: Market Interrogation...");
-  await runClaude(
-    `You are analyzing a deal in deals/${dealName}/. Read deals/${dealName}/01-extraction.md for the claim register.
-
-Use the market-researcher agent to independently verify market sizing, map the competitive landscape, and assess "Why Now?". Reference claim IDs when verifying. Limit web searches to 8-10 total.
-
-Save your complete output to deals/${dealName}/02-market.md`
-  );
-  console.log("  Phase 2 (market) complete.");
-}
-
-async function phase3_team() {
-  console.log("  Phase 3: Team Assessment...");
-  await runClaude(
-    `You are analyzing a deal in deals/${dealName}/. Read deals/${dealName}/01-extraction.md for the claim register.
-
-Use the team-researcher agent to research the founding team. Verify claimed backgrounds, assess execution capability, identify gaps. Limit web searches to 6-8 total.
-
-Save your complete output to deals/${dealName}/03-team.md`
-  );
-  console.log("  Phase 3 (team) complete.");
-}
-
-async function phase4_financial() {
-  console.log("  Phase 4: Financial Stress Test...");
-  await runClaude(
-    `You are analyzing a deal in deals/${dealName}/. Read deals/${dealName}/01-extraction.md for the claim register.
-
-Use the financial-modeler agent to stress-test the financials. Build bear/base/bull scenarios, analyze unit economics, assess runway and valuation.
-
-Save your complete output to deals/${dealName}/04-financials.md`
-  );
-  console.log("  Phase 4 (financial) complete.");
-}
-
-async function phase7_synthesis() {
-  console.log("Phase 7a: Synthesis...");
-  writeStatus({ currentPhase: "Phase 7: Synthesis & Review" });
-
-  await runClaude(
-    `You are analyzing a deal in deals/${dealName}/. Read the phase output files in deals/${dealName}/ (01-extraction.md, 02-market.md, 03-team.md, 04-financials.md, and 05-terms.md/06-impact.md if they exist).
-
-Use the synthesis-agent to compile all findings into a single investment memo. Follow the synthesis-agent's structure exactly — Executive Summary, Why Now, Bull/Bear Case, Team, Market, Product, Financial, Risk Matrix, Deal Score, Recommendation.
-
-Save your complete output to deals/${dealName}/07-memo.md`
-  );
-
-  if (!phaseExists("07-memo.md")) {
-    throw new Error("Synthesis failed — 07-memo.md not created");
-  }
-  console.log("  Synthesis complete.");
-}
-
-async function phase7_adversarial() {
-  console.log("Phase 7b: Adversarial Review...");
-  writeStatus({ currentPhase: "Phase 7b: Adversarial Review" });
-
-  await runClaude(
-    `You are reviewing a deal in deals/${dealName}/. Read deals/${dealName}/07-memo.md.
-
-Use the adversarial-reviewer agent to pressure-test the memo. Run the full adversarial process: assumption audit, weakest link analysis, pre-mortem, counter-thesis, and verdict with killer question.
-
-IMPORTANT: Append your adversarial review as an appendix to the existing memo file deals/${dealName}/07-memo.md. Do not overwrite the memo — add your review after the existing content.`
-  );
-  console.log("  Adversarial review complete.");
-}
-
-function generateDeliverables() {
-  const memoFile = `deals/${dealName}/07-memo.md`;
-  if (!fs.existsSync(path.join(PROJECT_ROOT, memoFile))) return;
-
-  try {
-    execSync(
-      `node scripts/generate-brief.js "${memoFile}" "output/${dealName}-brief.html" screening`,
-      { cwd: PROJECT_ROOT, stdio: "inherit" }
-    );
-    console.log("Brief generated.");
-  } catch (err) {
-    console.error("Brief generation failed:", err.message);
-  }
-
-  try {
-    execSync(
-      `node scripts/generate-docx.js "${memoFile}" "output/${dealName}-diligence-memo.docx"`,
-      { cwd: PROJECT_ROOT, stdio: "inherit" }
-    );
-    console.log("DOCX generated.");
-  } catch (err) {
-    console.error("DOCX generation failed:", err.message);
+    return latest;
+  } catch {
+    return null;
   }
 }
 
 // --- Main ---
 
-async function main() {
-  const startTime = Date.now();
-  console.log(`Starting ${pipelineType} pipeline for ${dealName}...`);
+const skillMap = {
+  screening: "full-diligence",
+  fund: "fund-diligence",
+  deep: "deep-diligence",
+};
 
-  try {
-    // Pre-extract PDFs
-    preExtractPDFs();
+const skill = skillMap[pipelineType] || "full-diligence";
 
-    // Phase 1: Extraction (sequential — everything depends on this)
-    await phase1();
+// Tell Claude that pre-extracted text files are available
+const extractedFiles = fs.readdirSync(dealDir).filter((f) => f.endsWith(".extracted.txt"));
+const extractHint = extractedFiles.length > 0
+  ? ` Pre-extracted text files are available (${extractedFiles.join(", ")}) — use these instead of reading PDFs directly for faster processing.`
+  : "";
 
-    // Phases 2-4: Market, Team, Financial (TRUE PARALLEL)
-    console.log("Phases 2-4: Running in parallel...");
-    writeStatus({ currentPhase: "Phases 2-4: Market, Team, Financial (parallel)" });
+// Supplementary context from the web UI (e.g., founder call notes, updated info)
+const supplementaryContext = process.env.PIPELINE_CONTEXT || "";
+const contextBlock = supplementaryContext
+  ? `\n\nAdditional context from the investor (incorporate this into your analysis):\n${supplementaryContext}`
+  : "";
 
-    await Promise.all([
-      phase2_market(),
-      phase3_team(),
-      phase4_financial(),
-    ]);
-    console.log("Phases 2-4 complete.");
+const prompt =
+  pipelineType === "deep"
+    ? `Run /${skill} on the deal in deals/${dealName}/. Data room files have been added.${extractHint}${contextBlock}`
+    : `Run /${skill} on the deck in deals/${dealName}/.${extractHint}${contextBlock}`;
 
-    // Phase 7a: Synthesis
-    await phase7_synthesis();
+console.log(`Starting ${pipelineType} pipeline for ${dealName}...`);
 
-    // Phase 7b: Adversarial Review
-    await phase7_adversarial();
+const child = spawn(
+  "claude",
+  ["--print", "--dangerously-skip-permissions", prompt],
+  {
+    cwd: PROJECT_ROOT,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env },
+  }
+);
 
-    // Generate deliverables
-    generateDeliverables();
+// Drain stdout/stderr to prevent backpressure
+child.stdout.resume();
+child.stderr.resume();
 
-    const elapsed = Math.round((Date.now() - startTime) / 60000);
-    console.log(`Pipeline completed in ${elapsed} minutes.`);
+// Poll filesystem for progress every 5s
+const dealLabels = {
+  1: "Phase 1: Claim Extraction",
+  2: "Phase 2: Market / Team / Financial (parallel)",
+  3: "Phase 2: Market / Team / Financial (parallel)",
+  4: "Phase 2: Market / Team / Financial (parallel)",
+  5: "Phase 5: Terms Analysis",
+  6: "Phase 6: Impact Analysis",
+  7: "Phase 7: Synthesis & Review",
+  8: "Phase 8: Data Room Analysis",
+  9: "Phase 9: Full Report",
+};
+
+const fundLabels = {
+  "deck-extracted.md": "Extraction",
+  "P1-people.md": "P1: People Assessment",
+  "P2-philosophy.md": "P2: Philosophy Assessment",
+  "P3-process.md": "P3: Process Assessment",
+  "P4-portfolio.md": "P4: Portfolio Assessment",
+  "P5-performance.md": "P5: Performance Assessment",
+  "fund-memo.md": "Synthesis & Review",
+};
+
+const poller = setInterval(() => {
+  const latestFile = detectPhaseFromFiles();
+  if (latestFile) {
+    if (pipelineType === "fund") {
+      writeStatus({ currentPhase: fundLabels[latestFile] || latestFile });
+    } else {
+      const phaseNum = parseInt(latestFile.split("-")[0], 10);
+      writeStatus({ currentPhase: dealLabels[phaseNum] || `Phase ${phaseNum}` });
+    }
+  }
+}, 5000);
+
+child.on("close", (code) => {
+  clearInterval(poller);
+
+  if (code === 0) {
+    console.log("Pipeline completed successfully.");
     writeStatus({
       state: "complete",
       currentPhase: null,
       completedAt: new Date().toISOString(),
     });
-  } catch (err) {
-    console.error("Pipeline failed:", err.message);
+
+    // Generate deliverables
+    let memoFile;
+    if (pipelineType === "fund") {
+      memoFile = `deals/${dealName}/fund-memo.md`;
+    } else if (pipelineType === "deep") {
+      memoFile = `deals/${dealName}/09-full-report.md`;
+    } else {
+      memoFile = `deals/${dealName}/07-memo.md`;
+    }
+    const stageArg = pipelineType === "deep" ? "full" : "screening";
+
+    if (fs.existsSync(path.join(PROJECT_ROOT, memoFile))) {
+      try {
+        execSync(
+          `node scripts/generate-brief.js "${memoFile}" "output/${dealName}-brief.html" ${stageArg}`,
+          { cwd: PROJECT_ROOT, stdio: "inherit" }
+        );
+        console.log("Brief generated.");
+      } catch (err) {
+        console.error("Brief generation failed:", err.message);
+      }
+
+      try {
+        execSync(
+          `node scripts/generate-docx.js "${memoFile}" "output/${dealName}-diligence-memo.docx"`,
+          { cwd: PROJECT_ROOT, stdio: "inherit" }
+        );
+        console.log("DOCX generated.");
+      } catch (err) {
+        console.error("DOCX generation failed:", err.message);
+      }
+    }
+  } else {
+    console.error(`Pipeline failed with exit code ${code}`);
     writeStatus({
       state: "failed",
       currentPhase: null,
-      error: err.message,
+      error: `Pipeline exited with code ${code}`,
       completedAt: new Date().toISOString(),
     });
   }
-}
+});
 
-main();
+child.on("error", (err) => {
+  clearInterval(poller);
+  console.error("Failed to spawn claude:", err.message);
+  writeStatus({
+    state: "failed",
+    currentPhase: null,
+    error: err.message,
+    completedAt: new Date().toISOString(),
+  });
+});
