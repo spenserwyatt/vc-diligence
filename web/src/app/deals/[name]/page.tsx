@@ -143,76 +143,16 @@ export default function DealDetailPage({
             </span>
           )}
         </div>
-        {/* Deal terms & stage */}
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          {deal.dealTerms && (
-            <span className="text-muted">{deal.dealTerms}</span>
-          )}
-          <span
-            className={`px-2 py-0.5 rounded text-xs font-medium ${
-              deal.stage === "deep"
-                ? "bg-navy/10 text-navy"
-                : deal.stage === "screening"
-                  ? "bg-blue/10 text-blue"
-                  : "bg-gray-100 text-muted"
-            }`}
-          >
-            {deal.stage === "deep"
-              ? "Deep Diligence Complete"
-              : deal.stage === "screening"
-                ? "Screening Complete"
-                : "Pending"}
-          </span>
-        </div>
-
-        {/* Analyst's weakest link */}
-        {deal.weakestLink && (
-          <p className="mt-3 text-sm text-body leading-relaxed border-l-4 border-navy pl-3 bg-gray-50 py-2 pr-3 rounded-r">
-            {deal.weakestLink}
-          </p>
+        {/* Deal terms */}
+        {deal.dealTerms && (
+          <p className="mt-1 text-sm text-muted">{deal.dealTerms}</p>
         )}
 
-        {/* Claims & top risk */}
-        <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-2 text-sm">
-          {deal.claimCounts.verified +
-            deal.claimCounts.unverified +
-            deal.claimCounts.questionable >
-            0 && (
-            <div className="flex gap-3 text-muted">
-              <span>✅ {deal.claimCounts.verified}</span>
-              <span>⚠️ {deal.claimCounts.unverified}</span>
-              <span>🚩 {deal.claimCounts.questionable}</span>
-            </div>
-          )}
-          {deal.topRisk && (
-            <div className="text-vc-red text-xs bg-vc-red/5 border border-vc-red/20 rounded px-2 py-1">
-              <span className="font-semibold">Top Risk:</span> {deal.topRisk}
-            </div>
-          )}
-        </div>
-
-        {/* Inline metadata badges */}
+        {/* Metadata badges */}
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           {deal.meta.source && (
             <span className="px-2 py-0.5 bg-gray-100 rounded text-muted">
               Source: {deal.meta.source}
-            </span>
-          )}
-          {deal.meta.passReason && (
-            <span className="px-2 py-0.5 bg-vc-red/10 text-vc-red rounded">
-              Pass: {deal.meta.passReason}
-            </span>
-          )}
-          {deal.meta.outcomeStatus && (
-            <span className={`px-2 py-0.5 rounded ${
-              deal.meta.outcomeStatus === "raised" || deal.meta.outcomeStatus === "acquired"
-                ? "bg-vc-green/10 text-vc-green"
-                : deal.meta.outcomeStatus === "failed"
-                  ? "bg-vc-red/10 text-vc-red"
-                  : "bg-gray-100 text-muted"
-            }`}>
-              Outcome: {deal.meta.outcomeStatus}
-              {deal.meta.outcomeValuation ? ` @ ${deal.meta.outcomeValuation}` : ""}
             </span>
           )}
           {deal.meta.nextReview && (
