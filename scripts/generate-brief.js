@@ -1691,11 +1691,19 @@ function buildScenarioAnalysis() {
 function buildWhatWouldChange() {
   const { conditions, rationale } = goDeeper;
   if (conditions.length === 0 && !rationale) return "";
+  // Filter out junk conditions (short fragments, verdict text)
+  const realConditions = conditions.filter((item) => {
+    const text = typeof item === "string" ? item : item.condition;
+    return text.length > 20 && !/^worth a meeting|^CONDITIONAL|^PASS|^PROCEED/i.test(text);
+  });
+  // Skip if rationale is just the recommendation verdict (quick screen)
+  const hasRealRationale = rationale && rationale.length > 30 && !/^worth a meeting/i.test(rationale.trim());
+  if (realConditions.length === 0 && !hasRealRationale) return "";
 
   let html = sectionHeader("IX", "What Would Change Our View", COLORS.amber);
 
-  if (conditions.length > 0) {
-    html += conditions.map((item) => {
+  if (realConditions.length > 0) {
+    html += realConditions.map((item) => {
       const cond = typeof item === "string" ? item : item.condition;
       const expl = typeof item === "string" ? "" : item.explanation;
       return `<div style="margin-bottom: 16px;">
