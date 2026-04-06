@@ -5,7 +5,7 @@ import { ProgressTracker } from "./ProgressTracker";
 import { FileUpload } from "./FileUpload";
 import type { DealStatus } from "@/lib/types";
 
-type PipelineType = "screening" | "fund" | "deep";
+type PipelineType = "screening" | "fund" | "deep" | "update";
 
 export function RunControls({
   dealName,
@@ -118,6 +118,32 @@ export function RunControls({
                 <div className="text-xs text-muted">
                   {hasScreening
                     ? "Phases 8-9 with data room materials"
+                    : "Requires completed screening first"}
+                </div>
+              </div>
+            </label>
+
+            <label
+              className={`flex items-center gap-3 p-3 rounded-lg border border-border cursor-pointer ${
+                !hasScreening
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="pipeline"
+                value="update"
+                checked={pipelineType === "update"}
+                onChange={() => setPipelineType("update")}
+                disabled={!hasScreening}
+                className="accent-blue"
+              />
+              <div>
+                <div className="font-medium text-sm">Update with New Documents</div>
+                <div className="text-xs text-muted">
+                  {hasScreening
+                    ? "Analyze new documents (PPM, terms, financials) and update the memo"
                     : "Requires completed screening first"}
                 </div>
               </div>

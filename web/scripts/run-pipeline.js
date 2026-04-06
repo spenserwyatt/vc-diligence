@@ -129,10 +129,24 @@ const contextBlock = supplementaryContext
   ? `\n\nAdditional context from the investor (incorporate this into your analysis):\n${supplementaryContext}`
   : "";
 
-const prompt =
-  pipelineType === "deep"
-    ? `Run /${skill} on the deal in deals/${dealName}/. Data room files have been added.${extractHint}${contextBlock}`
-    : `Run /${skill} on the deck in deals/${dealName}/.${extractHint}${contextBlock}`;
+let prompt;
+if (pipelineType === "update") {
+  // Partial re-run: analyze new documents, update terms + synthesis + adversarial review
+  prompt = `The deal in deals/${dealName}/ has already been screened (files 01-04 and 07-memo.md exist). New documents have been added to the folder.${extractHint}
+
+Do the following steps in order:
+
+1. Read the existing screening files (01-extraction.md through 04-financials.md) to understand the prior analysis.
+2. Identify any NEW files in the deal folder that weren't part of the original screening (PPMs, offering memos, term sheets, financial documents, or other materials added after the initial run).
+3. Use the terms-analyst agent to analyze any new legal/terms documents (PPM, offering memo, term sheet, LPA). Save to deals/${dealName}/05-terms.md
+4. Use the impact-analyst agent if any new impact-related materials are present. Save to deals/${dealName}/06-impact.md
+5. Use the synthesis-agent to UPDATE the existing memo at deals/${dealName}/07-memo.md — incorporate the new terms/impact findings into the existing analysis. Do not redo market, team, or financial analysis. Focus on how the new documents change the overall assessment, score, and recommendation.
+6. Use the adversarial-reviewer agent to pressure-test the updated memo. Append the adversarial review to 07-memo.md.${contextBlock}`;
+} else if (pipelineType === "deep") {
+  prompt = `Run /${skill} on the deal in deals/${dealName}/. Data room files have been added.${extractHint}${contextBlock}`;
+} else {
+  prompt = `Run /${skill} on the deck in deals/${dealName}/.${extractHint}${contextBlock}`;
+}
 
 console.log(`Starting ${pipelineType} pipeline for ${dealName}...`);
 
