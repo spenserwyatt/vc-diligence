@@ -20,17 +20,23 @@ As you read, note:
 - What's NOT in the materials (deliberate omissions vs expected-missing at this stage)
 - Anything that looks wrong or inflated
 
-## Step 2: Targeted Web Research (5-6 searches MAX)
+## Step 2: Targeted Web Research (8-10 searches)
 
-Do exactly these searches and no more:
+Do these searches:
 1. **Company name** — does it exist, any recent news, any red flags
-2. **CEO/founder name** — LinkedIn background, prior companies, verify key claims
-3. **Top competitor** — who is the biggest threat they may not have mentioned
-4. **Market size** — one search for industry TAM/growth data in their sector
-5. **Product/tech verification** — one search to confirm the technology or product is real
-6. (Optional) **Sector news** — one search for recent regulatory or market shifts
+2. **CEO/founder name** — LinkedIn background, prior companies, verify the MOST important claimed credential
+3. **Second key team member** — verify background of CTO/COO/key hire
+4. **Top competitor** — who is the biggest threat they may not have mentioned
+5. **Market size** — industry TAM/growth data in their sector
+6. **Product/tech verification** — confirm the technology or product is real
+7. **Regulatory/tariff/policy** — verify any regulatory claims in the deck (tariff rates, compliance requirements, government programs)
+8. **Verify the single most important number in the deck** — whatever claim the entire thesis rests on (revenue figure, market share, exit comp, cost structure), search for independent confirmation
 
-**Stop after 6 searches.** This is a quick screen, not deep research.
+**Optional (9-10):**
+9. **Second competitor or adjacent threat**
+10. **Recent M&A or funding in the sector**
+
+**Stop after 10 searches.** This is a quick screen, not deep research. But the 8 core searches are non-negotiable — the quality difference between 5 and 8 searches is enormous.
 
 ## Step 3: Write the Screening Memo
 
@@ -86,7 +92,17 @@ Write a single markdown file following this EXACT structure. The section heading
 
 ## 8. Financial Analysis
 
-[1-2 paragraphs. Do the numbers in the deck make sense? Is the valuation reasonable for the stage? What's the implied return math? Flag any obvious errors or inconsistencies. Mark all reconstructed numbers as [ESTIMATED].]
+[1-2 paragraphs on whether the deck's numbers hold up. Then a simple scenario table:]
+
+| Scenario | Probability | Key Assumption | Revenue/EBITDA | Implied Return |
+|----------|------------|----------------|---------------|----------------|
+| Bear | [X]% | [What goes wrong] | [Numbers] | [X.Xx MOIC] |
+| Base | [X]% | [Realistic case — 70% of plan] | [Numbers] | [X.Xx MOIC] |
+| Bull | [X]% | [Management's plan works] | [Numbers] | [X.Xx MOIC] |
+
+**Probability-weighted return: [show the math: (bear% × bear MOIC) + (base% × base MOIC) + (bull% × bull MOIC) = X.Xx]**
+
+[Compare to stage-appropriate return bar. Does the deal clear it? Mark all reconstructed numbers as [ESTIMATED].]
 
 ## 10. Impact Assessment
 
@@ -123,27 +139,39 @@ Write a single markdown file following this EXACT structure. The section heading
 
 # ADVERSARIAL REVIEW
 
-[Write this section yourself — you are both the analyst and the reviewer in quick screen mode]
+[Write this section yourself — you are both the analyst and the reviewer in quick screen mode. Be rigorous.]
+
+## 1. Top 3 Assumptions Tested
+
+For each, state the assumption, rate fragility (HIGH/MEDIUM/LOW), and explain what breaks if it's wrong:
+
+1. **[Assumption]** — Fragility: [X]. [What happens if wrong]
+2. **[Assumption]** — Fragility: [X]. [What happens if wrong]
+3. **[Assumption]** — Fragility: [X]. [What happens if wrong]
 
 ## 2. Weakest Link
 
-[The single weakest element of the thesis. One paragraph.]
+[The single weakest element of the thesis. One paragraph. If two risks are correlated (could happen together), flag the joint probability.]
 
 ## 4. Pre-Mortem
 
-[2-3 sentences: "It is [3 years from now]. This investment has failed. The most likely cause:" followed by the specific failure mode.]
+**It is [3 years from now]. This investment has failed. Here is what happened:**
+
+[One paragraph — a specific, plausible failure narrative. Not generic "things didn't work out." Name the specific events, timeline, and outcome for investors.]
+
+**Most likely cause of death:** [One sentence]
 
 ## 6. Verdict
 
 **Does the thesis survive?** [Yes/Partially/No — with 1-2 sentence explanation]
 
-**Weakest link the analysis underweights:** [One sentence]
+**Biggest risk the analysis underweights:** [One sentence]
 
 **If you could ask the founders one question:**
 
-*"[A specific, evidence-based question that gets at the core uncertainty. Not open-ended — something that has a concrete answer that would change your view.]"*
+*"[A specific, evidence-based question that gets at the core uncertainty. Not open-ended — something that has a concrete, verifiable answer that would change your view. Reference specific numbers or claims from the deck.]"*
 
-**Confidence:** [Level + one sentence explanation of what drives uncertainty]
+**Confidence:** [Level + one sentence on what drives uncertainty]
 ```
 
 ## Step 4: Save the Output
