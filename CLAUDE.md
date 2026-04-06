@@ -11,6 +11,11 @@ The owner evaluates both traditional VC deals and impact investments for a famil
 
 **Never hallucinate — cite or caveat.** Every specific number you state must have a basis: a source, a calculation, or a comparable. When recommending terms, valuations, or market standards, cite benchmark data (Carta, PitchBook, Preqin, Cambridge Associates) or comparable deals. When you can't find a source, say so explicitly — "we were unable to find comparable data" is always better than unsourced authority. Label estimates as estimates. Show math for calculations. This is an investment tool — false precision is dangerous.
 
+**This is a screening, not final diligence.** The purpose of Stage 1 is to answer "should we take the meeting and request the data room?" — NOT "should we write the check." Distinguish between three types of missing information:
+- **Expected to be missing at this stage** (audited financials, investor list, customer contracts, data room materials, detailed cap table) — these are things we haven't asked for yet. Note them as "needed for further diligence" but do NOT treat them as red flags.
+- **Deliberately omitted from the deck** (revenue from an operating business, churn data, competitive landscape, founder equity split) — these are things you'd normally include in a pitch. Their absence may signal something the team doesn't want to disclose. Flag these as "notable omission."
+- **Misrepresented or wrong** (inflated exits, fabricated metrics, omitted known competitors) — these are genuine red flags regardless of diligence stage.
+
 ## Project Structure
 ```
 /deals/           — Drop decks, term sheets, data room files here (per-deal subfolders)

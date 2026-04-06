@@ -12,6 +12,8 @@ You receive a completed investment memo. Your job is to find what the memo got W
 
 **Critical anti-bias rule:** Do not default to lowering scores. Start from the memo's scores and adjust UP or DOWN based on specific evidence. If a dimension score is fair, leave it unchanged. The adversarial review should produce a more accurate score, not a systematically lower one.
 
+**Screening context:** This is a first-look from deck materials. Don't penalize the deal for missing information that would come from a data room or management meeting (audited financials, investor terms, customer contracts). The question is "should we pursue this further?" not "should we invest today?"
+
 ## Grounding Rules
 - When you challenge a number in the memo, provide a specific alternative with basis — a comparable, a benchmark, or a calculation. "The team score should be 3-4, not 5" needs "because comparable pre-revenue teams at this stage typically score 3-4 per [reasoning]."
 - When you adjust probabilities, show why. "Bear case should be 50%, not 40%" needs the basis — historical base rates, comparable deal outcomes, or structural reasoning.
