@@ -196,19 +196,29 @@ function extractTopRisk(md: string): string | null {
 }
 
 function extractThesis(md: string): string | null {
-  const execSection = extractSection(md, "\\d+\\.\\s*Executive Summary");
+  // Get the first substantive paragraph — what the company/fund does
+  let execSection = extractSection(md, "\\d+\\.\\s*Executive Summary");
+  if (!execSection) execSection = extractSection(md, "Executive Summary");
   if (!execSection) return null;
-  // Get the "Our assessment" paragraph — typically the second paragraph with bold text
+
   const paragraphs = execSection
     .split(/\n\n+/)
-    .filter((p) => p.trim() && !p.trim().startsWith("|") && !p.trim().startsWith("-"));
-  if (paragraphs.length >= 2) {
-    const assess = paragraphs[1].replace(/\*\*/g, "").trim();
-    // First sentence
-    const first = assess.match(/^[^.]+\./);
-    return first ? first[0] : assess.slice(0, 200);
+    .filter((p) => {
+      const t = p.trim();
+      return t && !t.startsWith("|") && !t.startsWith("-") && !t.startsWith("<!--") && !t.startsWith("#") && !t.startsWith("**Date") && !t.startsWith("**Deal") && !t.startsWith("**Stage") && t.length > 30;
+    });
+  if (paragraphs.length === 0) return null;
+
+  // First paragraph is usually "what is this company/fund"
+  let text = paragraphs[0].replace(/\*\*/g, "").trim();
+
+  // Take first 1-2 sentences — enough to describe what they do
+  const sentences = text.match(/[^.!]+[.!]+/g);
+  if (sentences && sentences.length > 2) {
+    text = sentences.slice(0, 2).join("").trim();
   }
-  return paragraphs[0] ? paragraphs[0].replace(/\*\*/g, "").slice(0, 200) : null;
+  if (text.length > 200) text = text.slice(0, 200).replace(/\s+\S*$/, "") + "...";
+  return text;
 }
 
 function extractTitle(md: string): string {
