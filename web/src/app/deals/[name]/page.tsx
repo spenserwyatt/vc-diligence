@@ -8,11 +8,9 @@ import { BriefViewer } from "@/components/BriefViewer";
 import { FileList } from "@/components/FileList";
 import { RunControls } from "@/components/RunControls";
 import { AskPanel } from "@/components/AskPanel";
-import { DealMetaEditor } from "@/components/DealMeta";
-import { NotesLog } from "@/components/NotesLog";
 import type { DealDetail, DealStatus } from "@/lib/types";
 
-type Tab = "brief" | "files" | "run" | "info" | "ask";
+type Tab = "brief" | "files" | "run" | "ask";
 
 export default function DealDetailPage({
   params,
@@ -24,7 +22,7 @@ export default function DealDetailPage({
   const [deal, setDeal] = useState<DealDetail | null>(null);
   const [completedFiles, setCompletedFiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>("brief");
+  const [tab, setTab] = useState<Tab>("run"); // default to run, switch to brief once deal loads
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -37,9 +35,13 @@ export default function DealDetailPage({
         setDeal(data);
         // Seed completed files from the files list
         const pipelineFiles = (data.files || [])
-          .filter((f: { name: string }) => /^\d{2}-|^P\d-|^deck-extracted|^fund-memo/.test(f.name))
+          .filter((f: { name: string }) => /^\d{2}-|^P\d-|^deck-extracted|^fund-memo|^quick-screen/.test(f.name))
           .map((f: { name: string }) => f.name);
         setCompletedFiles(pipelineFiles);
+        // Set initial tab: brief if analysis exists, run if not
+        if (data.htmlBrief) {
+          setTab((prev) => prev === "run" ? "brief" : prev);
+        }
       }
     } catch {
       // ignore
@@ -113,24 +115,55 @@ export default function DealDetailPage({
     );
   }
 
+  const hasBrief = !!deal.htmlBrief;
   const tabs: { key: Tab; label: string }[] = [
-    { key: "brief", label: "Brief" },
+    ...(hasBrief ? [{ key: "brief" as Tab, label: "Brief" }] : []),
+    { key: "run", label: "Analyze" },
+    ...(hasBrief ? [{ key: "ask" as Tab, label: "Ask Claude" }] : []),
     { key: "files", label: "Files" },
-    { key: "run", label: "Run" },
-    { key: "info", label: "Info" },
-    { key: "ask", label: "Ask" },
   ];
 
   return (
     <div>
       {/* Header */}
       <div className="mb-6">
-        <Link
-          href="/"
-          className="text-sm text-muted hover:text-blue mb-2 inline-block"
-        >
-          &larr; All Deals
-        </Link>
+        <div className="flex items-center justify-between mb-2">
+          <Link
+            href="/"
+            className="text-sm text-muted hover:text-blue inline-block"
+          >
+            &larr; All Deals
+          </Link>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="text-xs text-muted hover:text-vc-red transition-colors"
+            >
+              Delete
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  setDeleting(true);
+                  const res = await fetch(`/api/deals/${deal.name}/delete`, { method: "POST" });
+                  if (res.ok) router.push("/");
+                  else setDeleting(false);
+                }}
+                disabled={deleting}
+                className="text-xs text-vc-red font-medium"
+              >
+                {deleting ? "Deleting..." : "Confirm delete"}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-xs text-muted"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-navy">
             {deal.displayName}
@@ -222,52 +255,14 @@ export default function DealDetailPage({
         </div>
       )}
 
-      {tab === "info" && (
-        <div className="space-y-8">
-          <DealMetaEditor dealName={deal.name} initialMeta={deal.meta} />
-          <NotesLog dealName={deal.name} />
-
-          {/* Delete deal */}
-          <div className="border-t border-border pt-6">
-            {!confirmDelete ? (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="text-xs text-muted hover:text-vc-red transition-colors"
-              >
-                Delete this deal...
-              </button>
-            ) : (
-              <div className="p-4 bg-vc-red/5 border border-vc-red/20 rounded-lg">
-                <p className="text-sm font-medium text-vc-red mb-3">
-                  Permanently delete {deal.displayName}? This removes all files, notes, and analysis. Cannot be undone.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={async () => {
-                      setDeleting(true);
-                      const res = await fetch(`/api/deals/${deal.name}/delete`, { method: "POST" });
-                      if (res.ok) router.push("/");
-                      else setDeleting(false);
-                    }}
-                    disabled={deleting}
-                    className="px-4 py-1.5 bg-vc-red text-white rounded text-xs font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
-                  >
-                    {deleting ? "Deleting..." : "Yes, delete permanently"}
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(false)}
-                    className="px-4 py-1.5 text-xs text-muted hover:text-body"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+      {tab === "ask" && (
+        <div>
+          <p className="text-sm text-muted mb-4">
+            Ask anything about this deal. Claude has the full analysis as context and will answer based on what was found.
+          </p>
+          <AskPanel dealName={deal.name} />
         </div>
       )}
-
-      {tab === "ask" && <AskPanel dealName={deal.name} />}
     </div>
   );
 }
