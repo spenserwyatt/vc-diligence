@@ -13,7 +13,7 @@ Institutional-quality deal analysis powered by Claude Code. Drop a pitch deck an
 ## Setup
 
 ```bash
-git clone <repo-url> vc-diligence
+git clone https://github.com/spenserwyatt/vc-diligence.git
 cd vc-diligence
 chmod +x setup.sh
 ./setup.sh
@@ -133,25 +133,20 @@ vc-diligence/
 
 ### Stage 1: Screening (auto-detected from startup materials)
 ```
-Input → Deck Analyst (extract claims)
+Input → Deck Analyst (structured extraction, gaps, red flags)
               ↓
          Market Researcher ─┐
-         Competitive Analyst ├── Agent Team (parallel)
-         Trend Analyst ──────┘
-              ↓
-         Team Researcher
-              ↓
-         Financial Modeler (marks estimates [ESTIMATED])
+         Team Researcher    ├── Parallel
+         Financial Modeler ─┘
               ↓
          Terms Analyst (if term sheet exists)
-              ↓
          Impact Analyst (if impact deal)
               ↓
-         Synthesis Agent → Screening Memo (confidence annotations)
+         Synthesis Agent → Screening Memo
               ↓
-         Adversarial Reviewer → Pressure Test
+         Adversarial Reviewer → Pressure Test (Opus)
               ↓
-         Word Doc + HTML Brief → output/
+         HTML Brief + Word Doc → output/
 ```
 
 ### Stage 2: Deep Diligence (triggered when data room added)
@@ -179,37 +174,25 @@ Verify Stage 1 (01-07) exists
 ### Fund Evaluation (auto-detected from fund materials)
 ```
 Input → P1: People (team-researcher)
-         P2: Philosophy (synthesis-agent)
-         P3: Process (research agents)
-         P4: Portfolio (market-researcher + competitive-analyst)
+         P2: Philosophy (market-researcher)
+         P3: Process (market-researcher)
+         P4: Portfolio (market-researcher)
          P5: Performance (financial-modeler)
               ↓
          Impact Analyst (if impact fund)
               ↓
          Synthesis Agent → Fund Memo
               ↓
-         Adversarial Reviewer → Pressure Test
+         Adversarial Reviewer → Pressure Test (Opus)
               ↓
-         Word Doc + HTML Brief → output/
+         HTML Brief + Word Doc → output/
 ```
 
 ## Scoring Weights
 
-### Direct Deals
-| Dimension | Weight |
-|-----------|--------|
-| Team | 25% |
-| Market | 25% |
-| Product/Traction | 20% |
-| Financial Viability | 15% |
-| Terms | 10% |
-| Risk-Adjusted | 5% |
-
-### Impact Deals (modified)
-Impact Integrity added at 10%, pulling proportionally from Market and Financial.
-
-## Modeled After
-- Sequoia Capital's investment memo process (YouTube memo, DoorDash memo)
-- Bessemer Venture Partners' memo discipline ("Reasons NOT to Invest" section)
-- a16z's rigorous internal evaluation framework
-- Real investment memos from Lightspeed (Snapchat), Intel Capital (LinkedIn), Airbase (Series B)
+### Key Design Decisions
+- **All agents on Sonnet** except adversarial reviewer (Opus) — speed for research, depth for pressure-testing
+- **No formal claim ID system** — agents call out contradictions naturally instead of maintaining a tagging pipeline
+- **Anti-hallucination rules** — every agent must cite sources for market standards, benchmarks, and specific recommendations
+- **Impact section always present** — even commercial deals get a note on potential positive externalities
+- **Adversarial reviewer balanced** — can raise OR lower scores, not systematically negative
