@@ -69,10 +69,10 @@ export function DealCard({ deal }: { deal: DealSummary }) {
         <span className="text-muted ml-auto text-xs">{date}</span>
       </div>
 
-      {/* Deal description */}
-      {deal.dealTerms && (
+      {/* Thesis */}
+      {deal.thesis && (
         <p className="text-xs text-muted leading-relaxed line-clamp-2">
-          {deal.dealTerms}
+          {deal.thesis}
         </p>
       )}
     </Link>
