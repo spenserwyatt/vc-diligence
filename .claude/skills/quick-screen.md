@@ -29,7 +29,7 @@ Quick verification only:
 
 ## Step 3: Write the First Read
 
-Save to `deals/[company-name]/07-memo.md` using this EXACT format:
+Save to `deals/[company-name]/quick-screen.md` AND copy to `deals/[company-name]/07-memo.md` (so the brief generator and Ask tab can find it). Use this EXACT format:
 
 ```markdown
 # [Company Name] — First Read
