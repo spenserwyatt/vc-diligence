@@ -69,10 +69,10 @@ export function DealCard({ deal }: { deal: DealSummary }) {
         <span className="text-muted ml-auto text-xs">{date}</span>
       </div>
 
-      {/* Analyst's one-liner — weakest link or top risk */}
-      {(deal.weakestLink || deal.topRisk) && (
+      {/* Deal description */}
+      {deal.dealTerms && (
         <p className="text-xs text-muted leading-relaxed line-clamp-2">
-          {deal.weakestLink || deal.topRisk}
+          {deal.dealTerms}
         </p>
       )}
     </Link>
