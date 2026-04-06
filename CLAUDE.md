@@ -25,7 +25,8 @@ The owner evaluates both traditional VC deals and impact investments for a famil
 ### Input Detection & Routing
 The system auto-detects what you've provided and routes accordingly:
 - **Pitch deck / startup materials** → Direct Deal Pipeline (7 phases)
-- **Fund deck / PPM / LPA / GP materials** → Fund Diligence Pipeline (5P framework)
+- **Offering memo / deal PPM** → Direct Deal Pipeline with terms-analyst (provision-by-provision analysis)
+- **Fund deck / fund PPM / LPA / GP materials** → Fund Diligence Pipeline (5P framework + terms analysis if PPM/LPA present)
 - **Term sheet only** → Terms Analyst directly
 - **Company or fund name only** → Research-first mode (gather info, then run pipeline)
 

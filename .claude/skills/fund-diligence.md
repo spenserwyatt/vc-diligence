@@ -12,7 +12,8 @@ You are conducting institutional-quality fund due diligence using the 5P framewo
 Read the fund materials provided (fund deck, PPM, LPA, track record data, or just a fund name).
 
 Determine:
-- What materials are available?
+- What materials are available? (fund deck, PPM, LPA, track record, side letters)
+- **Is there a PPM or LPA?** If yes, this is the most important document — it contains the real terms that the marketing deck won't show you. Flag it for the terms-analyst.
 - What fund type? (VC, growth equity, impact fund, sector-specific)
 - What vintage/fund number? (Fund I = different analysis than Fund III)
 - Is this an impact fund? (triggers additional impact-specific analysis)
@@ -85,6 +86,22 @@ Save to `deals/[fund-name]/P4-portfolio.md`
 - Persistence — do prior fund returns predict future performance for this GP?
 
 Save to `deals/[fund-name]/P5-performance.md`
+
+## Terms Analysis (if PPM or LPA present)
+
+**Delegate to: terms-analyst subagent — ONLY if a PPM, LPA, or subscription agreement is present in the deal folder.**
+
+The terms-analyst extracts and evaluates all economic and governance terms:
+- Management fee structure and total fee drag
+- Carried interest, hurdle, waterfall structure
+- GP commit, clawback, escrow
+- Key person clauses, no-fault removal
+- LPAC rights, investment restrictions
+- Fund term, extensions, recycling
+
+Save to `deals/[fund-name]/05-terms.md`
+
+This gives the synthesis agent real terms data instead of guessing from the marketing deck. The P5 (Performance) analysis should reference these terms when assessing fee drag and net returns.
 
 ## Synthesis
 

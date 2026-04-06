@@ -14,9 +14,10 @@ Read whatever materials have been provided (deck, term sheet, data room docs, or
 **Performance optimization:** Check for `.extracted.txt` files in the deal folder — these are pre-extracted text from PDFs created by the pipeline runner. If available, read these instead of the raw PDFs. They contain the same content but are much faster to process.
 
 Determine:
-- What type of input is this? (deck, term sheet, data room, company name only)
+- What type of input is this? (deck, term sheet, PPM/offering memo, data room, company name only)
 - Is this an impact deal? (climate, social enterprise, ESG-thesis, SDG-aligned)
-- Is there a term sheet present?
+- Is there a term sheet or PPM/offering memorandum present? (Look for "Private Placement Memorandum", "Offering Memorandum", "Reg D", "Subscription Agreement" in document titles or headers)
+- If the materials are fund documents (PPM, LPA, fund deck), route to `fund-diligence` instead
 - What's missing that would strengthen the analysis?
 
 **Investment stage classification — CRITICAL for scoring calibration:**
@@ -121,9 +122,11 @@ Save output to `deals/[company-name]/04-financials.md`
 Launch whichever of these apply as parallel tool calls in a single message. If neither applies, skip to Phase 7.
 
 ### Phase 5: Terms Analysis
-**Delegate to: terms-analyst subagent — ONLY if a formal term sheet is provided.**
+**Delegate to: terms-analyst subagent — if a term sheet, PPM, or offering memorandum is present.**
 
-If no term sheet exists, skip — the financial-modeler (Phase 4) already covers basic deal economics.
+The terms-analyst handles all legal investment documents: term sheets, PPMs (Private Placement Memorandums), offering memorandums, subscription agreements. If any of these exist in the deal folder, run the terms-analyst.
+
+If no legal documents exist, skip — the financial-modeler (Phase 4) already covers basic deal economics.
 
 Save output to `deals/[company-name]/05-terms.md`
 
