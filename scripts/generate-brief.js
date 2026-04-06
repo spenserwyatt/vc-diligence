@@ -1900,7 +1900,7 @@ const html = `<!DOCTYPE html>
           : `<p style="font-size: 14px; color: ${COLORS.muted}; line-height: 1.7;">${
               hasImpactThesis
                 ? "Impact thesis identified in materials but no dedicated impact assessment was conducted. Consider running the impact-analyst for a full evaluation of theory of change, additionality, and measurement framework."
-                : "No measurable impact thesis identified in the materials provided. This appears to be a purely commercial investment with no stated social, environmental, or ESG objectives."
+                : "This deal is not structured as a formal impact investment — there is no stated theory of change, additionality framework, or impact measurement commitment. However, the underlying product or service may have positive externalities (environmental, health, social) if successful. A dedicated impact assessment was not conducted."
             }</p>`
         }
       </div>

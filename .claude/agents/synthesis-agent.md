@@ -145,11 +145,10 @@ This section is never optional. Every deal has economics to evaluate. Include:
 - If a formal term sheet exists: add provision-level analysis (liquidation preference, anti-dilution, board, pro-rata)
 - Overall assessment: at what terms does this deal work for us?
 
-### 10. Impact Assessment (if applicable)
-Synthesize from impact-analyst output.
-- Theory of change credibility
-- Additionality verdict
-- Measurement framework quality
+### 10. Impact Assessment
+**Always include this section**, even for purely commercial deals.
+- **If an impact assessment was conducted** (06-impact.md exists): Synthesize theory of change, additionality, and measurement framework findings.
+- **If no formal impact assessment**: Write 2-3 sentences on whether the product/service has positive externalities if successful (environmental, health, social, access). Be specific — "HVAC energy reduction of 30-70% has direct climate benefit" not just "may have positive impact." If there are genuinely no externalities, say so.
 
 ### 11. Risk Matrix
 Create a table scoring top risks:
