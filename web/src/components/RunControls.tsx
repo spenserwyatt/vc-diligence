@@ -5,7 +5,7 @@ import { ProgressTracker } from "./ProgressTracker";
 import { FileUpload } from "./FileUpload";
 import type { DealStatus } from "@/lib/types";
 
-type PipelineType = "screening" | "fund" | "deep" | "update";
+type PipelineType = "quick" | "screening" | "fund" | "deep" | "update";
 
 export function RunControls({
   dealName,
@@ -25,7 +25,7 @@ export function RunControls({
   onUploadComplete: () => void;
 }) {
   const [pipelineType, setPipelineType] = useState<PipelineType>(
-    hasScreening ? "deep" : "screening"
+    hasScreening ? "deep" : "quick"
   );
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,15 +67,32 @@ export function RunControls({
               <input
                 type="radio"
                 name="pipeline"
+                value="quick"
+                checked={pipelineType === "quick"}
+                onChange={() => setPipelineType("quick")}
+                className="accent-blue"
+              />
+              <div>
+                <div className="font-medium text-sm">Quick Screen</div>
+                <div className="text-xs text-muted">
+                  Fast first look — single-pass analysis (~10-15 min)
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-gray-50 cursor-pointer">
+              <input
+                type="radio"
+                name="pipeline"
                 value="screening"
                 checked={pipelineType === "screening"}
                 onChange={() => setPipelineType("screening")}
                 className="accent-blue"
               />
               <div>
-                <div className="font-medium text-sm">Run Screening</div>
+                <div className="font-medium text-sm">Full Analysis</div>
                 <div className="text-xs text-muted">
-                  7-phase analysis from pitch materials
+                  Deep multi-agent pipeline (~35-50 min)
                 </div>
               </div>
             </label>
@@ -168,9 +185,10 @@ export function RunControls({
           </div>
 
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-            <strong>Before you start:</strong> Runs take 20-40 minutes and use
-            Claude credits (~$5-15 per run depending on deal complexity). The
-            pipeline cannot be stopped once started.
+            <strong>Before you start:</strong>{" "}
+            {pipelineType === "quick"
+              ? "Quick Screen takes ~10-15 minutes. Run Full Analysis later for deeper coverage."
+              : "Runs take 30-50 minutes and use Claude credits. The pipeline cannot be stopped once started."}
           </div>
 
           <button

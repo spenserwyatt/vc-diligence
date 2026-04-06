@@ -110,6 +110,7 @@ function detectPhaseFromFiles() {
 // --- Main ---
 
 const skillMap = {
+  quick: "quick-screen",
   screening: "full-diligence",
   fund: "fund-diligence",
   deep: "deep-diligence",

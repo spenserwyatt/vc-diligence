@@ -31,7 +31,7 @@ export async function POST(
   const pipelineType = (body.type || "screening") as PipelineType;
   const context = typeof body.context === "string" ? body.context.trim() : "";
 
-  if (!["screening", "fund", "deep", "update"].includes(pipelineType)) {
+  if (!["quick", "screening", "fund", "deep", "update"].includes(pipelineType)) {
     return NextResponse.json(
       { error: "Invalid pipeline type" },
       { status: 400 }

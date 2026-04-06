@@ -3,7 +3,7 @@ import { PROJECT_ROOT, DEALS_DIR } from "./paths";
 import { spawn } from "child_process";
 import path from "path";
 
-export type PipelineType = "screening" | "fund" | "deep" | "update";
+export type PipelineType = "quick" | "screening" | "fund" | "deep" | "update";
 
 /**
  * Spawns the pipeline as a fully detached process so the Next.js server
