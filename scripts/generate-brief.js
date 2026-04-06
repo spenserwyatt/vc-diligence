@@ -208,7 +208,7 @@ function extractFullExecSummary(md) {
   return extractProse(execSection);
 }
 
-// Pulls flowing prose paragraphs from a section — skips tables, comments, lists, headers
+// Pulls flowing prose paragraphs from a section — skips tables, comments, lists, headers, metadata
 function extractProse(section, maxParagraphs) {
   maxParagraphs = maxParagraphs || 10;
   return section
@@ -219,9 +219,10 @@ function extractProse(section, maxParagraphs) {
         !t.startsWith("|") &&
         !t.startsWith("---") &&
         !t.startsWith("<!--") &&
-        !t.startsWith("###") &&
+        !t.startsWith("#") &&
         !t.startsWith("- **") &&
         !t.startsWith("* **") &&
+        !/^\*\*(?:Analyst|Date|Sources|Reviewer|Purpose|Stage):/i.test(t) &&
         t.length > 40;
     })
     .map((p) => p.trim())
@@ -1141,6 +1142,23 @@ const companyDescription = extractCompanyDescription(markdown);
 const bottomLine = extractBottomLine(markdown);
 const fullExecSummary = extractFullExecSummary(markdown);
 
+// Impact assessment — check if 06-impact.md exists or if impact sections exist in the memo
+const impactProse = (() => {
+  // Check for standalone impact file
+  const impactPath = path.join(path.dirname(inputPath), "06-impact.md");
+  if (fs.existsSync(impactPath)) {
+    const impactMd = fs.readFileSync(impactPath, "utf-8");
+    return extractProse(impactMd, 3);
+  }
+  // Check for impact section within the memo
+  const impactSection = extractSection(markdown, "\\d+\\.\\s*Impact Assessment") ||
+                        extractSection(markdown, "Impact Assessment") ||
+                        extractSection(markdown, "Impact Analysis");
+  if (impactSection) return extractProse(impactSection, 3);
+  return [];
+})();
+const hasImpactThesis = impactProse.length > 0 || /impact thesis|impact fund|ESG|SDG|additionality|theory of change/i.test(markdown.slice(0, 5000));
+
 // Dimension prose sections — concise analysis per area
 let teamProse, marketProse, financialProse;
 if (isFundMemo) {
@@ -1871,6 +1889,21 @@ const html = `<!DOCTYPE html>
           `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
         ).join("\n")}
       </div>` : ""}
+
+      <!-- Impact -->
+      <div style="margin-top: 28px;">
+        <h2 style="color: ${COLORS.navy}; font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.navy};">Impact</h2>
+        ${impactProse.length > 0
+          ? impactProse.map((p) =>
+              `<p style="font-size: 14px; color: ${COLORS.body}; line-height: 1.7; margin-bottom: 14px;">${mdBoldToHtml(p)}</p>`
+            ).join("\n")
+          : `<p style="font-size: 14px; color: ${COLORS.muted}; line-height: 1.7;">${
+              hasImpactThesis
+                ? "Impact thesis identified in materials but no dedicated impact assessment was conducted. Consider running the impact-analyst for a full evaluation of theory of change, additionality, and measurement framework."
+                : "No measurable impact thesis identified in the materials provided. This appears to be a purely commercial investment with no stated social, environmental, or ESG objectives."
+            }</p>`
+        }
+      </div>
 
       ${buildManagementQuestions()}
 
