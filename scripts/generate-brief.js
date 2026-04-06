@@ -500,9 +500,11 @@ function extractGoDeeper(md) {
 
   const result = { conditions: [], rationale: "" };
 
-  // Find the "what would change / revisit / upgrade" block and extract full items with explanations
+  // Find the "what would change / revisit / upgrade / conditions" block
   const changeMatch = recSection.match(
     /###?\s*(?:Conditions (?:to Revisit|for Upgrade|Required to Upgrade)[^\n]*)\n+([\s\S]*?)(?=\n###|\n##|$)/i
+  ) || recSection.match(
+    /\*\*(?:Conditions? (?:that must|to|for)[^*]*|What would (?:change|make this worth|raise)[^*]*)\*\*[:\s]*([\s\S]*?)(?=\n\*\*What would (?:drop|lower|raise)[^*]*\*\*|\n---|\n##|$)/i
   ) || recSection.match(
     /\*\*(?:What would (?:change|make this worth)[^*]*|Conditions to (?:Revisit|Upgrade)[^*]*)\*\*[:\s]*([\s\S]*?)(?=\n\*\*[A-Z][^*]{0,30}\*\*(?!\.)|\n---|\n##|$)/i
   ) || recSection.match(
@@ -511,13 +513,25 @@ function extractGoDeeper(md) {
 
   if (changeMatch) {
     const content = changeMatch[1].trim();
-    // Split on numbered items: "1. **Bold.** explanation"
+    // Try numbered items: "1. **Bold.** explanation"
     const itemRegex = /\d+\.\s+\*\*(.+?)\*\*\s*([\s\S]*?)(?=\n\d+\.\s+\*\*|$)/g;
     let match;
     while ((match = itemRegex.exec(content)) !== null) {
       const condition = match[1].replace(/\.$/, "").trim();
       const explanation = match[2].trim();
       result.conditions.push({ condition, explanation });
+    }
+
+    // Try **Condition N — Title.** paragraphs
+    if (result.conditions.length === 0) {
+      const condRegex = /\*\*(?:Condition \d+\s*[—–-]\s*)?([^*]+?)\*\*\s*([\s\S]*?)(?=\n\*\*(?:Condition|What would)|$)/gi;
+      while ((match = condRegex.exec(content)) !== null) {
+        const condition = match[1].replace(/\.$/, "").replace(/^Non-negotiable\s*/i, "").trim();
+        const explanation = match[2].trim();
+        if (condition.length > 10 && !/^CONDITIONAL|^PASS|^PROCEED/i.test(condition)) {
+          result.conditions.push({ condition, explanation });
+        }
+      }
     }
 
     // Fallback: bullet items (with or without bold)
@@ -828,26 +842,22 @@ function extractScenarioTable(md) {
 }
 
 function extractManagementQuestions(md) {
-  const section = extractSection(md, "\\d+\\.\\s*Open Questions for Management");
+  let section = extractSection(md, "\\d+\\.\\s*Open Questions for Management");
+  if (!section) section = extractSection(md, "Open Questions for (?:Management|GP)");
   if (!section) return [];
 
+  // Split on numbered items to get full questions (bold label + explanation)
+  const items = section.split(/\n(?=\d+\.\s+)/);
   const questions = [];
-  const regex = /^\d+\.\s+\*\*(.+?)\*\*/gm;
-  let match;
-  while ((match = regex.exec(section)) !== null) {
-    questions.push(match[1].trim());
-  }
-
-  // Fallback: simple numbered list items
-  if (questions.length === 0) {
-    const numRegex = /^\d+\.\s+(.+)/gm;
-    while ((match = numRegex.exec(section)) !== null) {
-      const text = match[1].replace(/\*\*/g, "").trim();
-      if (text.length > 10) questions.push(text);
+  for (const item of items) {
+    const match = item.match(/^\d+\.\s+([\s\S]+)/);
+    if (match) {
+      const full = match[1].replace(/\n/g, " ").trim();
+      if (full.length > 15) questions.push(full);
     }
   }
 
-  return questions.slice(0, 7);
+  return questions.slice(0, 10);
 }
 
 function extractCompetitorTable(md) {
@@ -1164,7 +1174,7 @@ let teamProse, marketProse, financialProse;
 if (isFundMemo) {
   const tryExtract = (...patterns) => {
     for (const p of patterns) {
-      const result = extractSectionProse(markdown, p, 2);
+      const result = extractSectionProse(markdown, p, 3);
       if (result.length > 0) return result;
     }
     return [];
@@ -1173,9 +1183,9 @@ if (isFundMemo) {
   marketProse = tryExtract("\\d+\\.\\s*Philosophy Assessment", "\\d+\\.\\s*Portfolio Assessment", "Philosophy Assessment", "Portfolio Assessment");
   financialProse = tryExtract("\\d+\\.\\s*Performance", "Performance Assessment", "Performance.*Fee");
 } else {
-  teamProse = extractSectionProse(markdown, "\\d+\\.\\s*Team Assessment", 2);
-  marketProse = extractSectionProse(markdown, "\\d+\\.\\s*Market Opportunity", 2);
-  financialProse = extractSectionProse(markdown, "\\d+\\.\\s*Financial Analysis", 2);
+  teamProse = extractSectionProse(markdown, "\\d+\\.\\s*Team Assessment", 3);
+  marketProse = extractSectionProse(markdown, "\\d+\\.\\s*Market Opportunity", 3);
+  financialProse = extractSectionProse(markdown, "\\d+\\.\\s*Financial Analysis", 3);
 }
 
 // Leadership — for funds, extract GP info from People Assessment
